@@ -278,6 +278,23 @@ def handler(app: App):
                                                              b.get("purpose", ""), b.get("examiner", "")))
                 except (ValueError, RuntimeError) as e:
                     return self.json({"error": str(e)}, 400)
+            if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("redact", "potli"):
+                cj = app.safe(parts[2], "case.json")
+                if not cj:
+                    return self.json({"error": "no such case"}, 404)
+                n = int(self.headers.get("Content-Length") or 0)
+                try:
+                    b = json.loads(self.rfile.read(n) or b"{}")
+                except ValueError:
+                    return self.json({"error": "bad request"}, 400)
+                from . import anveshan
+                try:
+                    if parts[3] == "redact":
+                        return self.json(anveshan.redact(cj.parent, str(b.get("clip", "")), [str(x) for x in b.get("keep") or []],
+                                                         b.get("examiner", ""), b.get("purpose", "")))
+                    return self.json(anveshan.package(cj.parent, b.get("examiner", "")))
+                except (ValueError, RuntimeError) as e:
+                    return self.json({"error": str(e)}, 400)
             if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("ask", "capsule", "replay"):
                 cj = app.safe(parts[2], "case.json")
                 if not cj:
@@ -397,6 +414,19 @@ def handler(app: App):
 
         def api(self, parts, q=None):
             q = q or {}
+            if len(parts) in (3, 4) and parts[0] == "case" and parts[2] == "anveshan":
+                cj = app.safe(parts[1], "case.json")
+                if not cj:
+                    return self.json({"error": "no such case"}, 404)
+                from . import anveshan
+                try:
+                    if len(parts) == 4:
+                        return self.json(anveshan.search(cj.parent, parts[3]))
+                    return self.json({"candidates": anveshan.candidates(cj.parent),
+                                      "redactions": anveshan.redactions(cj.parent),
+                                      "packages": anveshan.packages(cj.parent), "disclaimer": anveshan.DISCLAIMER})
+                except ValueError as e:
+                    return self.json({"error": str(e)}, 400)
             if len(parts) == 4 and parts[0] == "case" and parts[2] == "diskmap":
                 return self.json(disk_map(app, parts[1], parts[3], int((q.get("bins") or ["1600"])[0])))
             if len(parts) == 4 and parts[0] == "case" and parts[2] == "cell":
