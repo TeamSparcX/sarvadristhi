@@ -2,7 +2,7 @@
 unused space, as a rebadged or relabelled unit might carry. Detection must still follow the
 structures on disk, and the workbench must show the label as a conflict, not obey it.
 
-    python -m pramanshala.labels SRC.img DST.img ["CP PLUS DVR CP-UVR-0401E1"]"""
+    python -m evidence_builder.labels SRC.img DST.img ["CP PLUS DVR CP-UVR-0401E1"]"""
 import shutil
 import sys
 from pathlib import Path

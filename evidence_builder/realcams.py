@@ -5,7 +5,7 @@ left 512 px, CAM-02 the right 512 px starting 10 s later, so people walking left
 handed over from one camera to the other: real people, a known geometry, a known time offset.
 Each camera gets a burned-in label and clock like a DVR overlay.
 
-    python -m pramanshala.realcams kit/real/vtest.avi kit/real/"""
+    python -m evidence_builder.realcams kit/real/vtest.avi kit/real/"""
 import subprocess
 import sys
 from pathlib import Path

@@ -105,14 +105,14 @@ def run(image: str, events: Path, out_dir: Path, device: dict, physical: bool, r
     lg = read_log(Path(events), recorder_offset_s)
     log(f"Event log: {len(lg)} entries")
     case_dir = out_dir / "case"
-    analyse(image, case_dir, f"KASAUTI-{time.strftime('%Y%m%d-%H%M%S')}", examiner or "kasautipeeth", pdf=False, log=log)
+    analyse(image, case_dir, f"RECVAL-{time.strftime('%Y%m%d-%H%M%S')}", examiner or "recorder_validation", pdf=False, log=log)
     s = score(case_dir, lg)
     rep = {"kit": "Recorder validation 1", "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "image": str(image),
            "device": device, "physical_recorder": bool(physical), "recorder_offset_s": recorder_offset_s,
            "examiner": examiner, "case_dir": str(case_dir), **s,
            "scope": ("One recording session on one physical device." if physical else
                      "Rehearsal on a modelled image: exercises the kit, says nothing about real hardware.")}
-    (out_dir / "kasauti.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
+    (out_dir / "recorder_validation.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
     md = [f"# Recorder validation validation · {device.get('make', '?')} {device.get('model', '')}".rstrip(),
           "", f"{'Physical recorder' if physical else 'REHEARSAL on a modelled image'} · {rep['utc']} · detected family "
           f"{s['family']} ({s['confidence']}) · mean coverage {s['mean_coverage']} · logged events detected {s['events_detected']}",
@@ -121,12 +121,12 @@ def run(image: str, events: Path, out_dir: Path, device: dict, physical: bool, r
         when = datetime.fromtimestamp(r["start_ms"] / 1000, timezone.utc).strftime("%H:%M:%S") if r["start_ms"] else ""
         md.append(f"| {r['channel'] or ''} | {r['action']} | {when} | {r['verdict']} | {r['detail']} |")
     md += ["", rep["scope"]]
-    (out_dir / "kasauti.md").write_text("\n".join(md), encoding="utf-8")
+    (out_dir / "recorder_validation.md").write_text("\n".join(md), encoding="utf-8")
     if registry:
         registry.mkdir(parents=True, exist_ok=True)
         (registry / f"{time.strftime('%Y%m%d-%H%M%S')}.json").write_text(json.dumps(
             {k: rep[k] for k in ("utc", "device", "physical_recorder", "family", "confidence", "mean_coverage",
-                                 "events_detected", "image", "scope")} | {"report": str(out_dir / "kasauti.md")}, indent=1),
+                                 "events_detected", "image", "scope")} | {"report": str(out_dir / "recorder_validation.md")}, indent=1),
             encoding="utf-8")
     return rep
 
@@ -145,12 +145,12 @@ def promote(caps: dict, registry: Path) -> dict:
             for k in ("detect", "recover", "time"):
                 o["cells"][k] = "real"
             o["trust"] = "L3"
-    caps["kasauti_runs"] = len(runs(registry))
+    caps["recorder_validation_runs"] = len(runs(registry))
     return caps
 
 
 def events_from_ground_truth(gt_csv: Path, out_csv: Path, format_time_ms: int | None = None) -> Path:
-    """Rehearsal helper: turn a Pramanshala ground-truth file into an event log as an examiner would write it."""
+    """Rehearsal helper: turn an Evidence builder ground-truth file into an event log as an examiner would write it."""
     span = defaultdict(lambda: [None, None])
     with open(gt_csv, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):

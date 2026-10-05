@@ -1,5 +1,5 @@
 """A mock network video recorder for protocol tests. It checks ONVIF WS-Security digests and
-HTTP Digest auth, and serves pramanshala recordings through Dahua and Hikvision download APIs."""
+HTTP Digest auth, and serves evidence_builder recordings through Dahua and Hikvision download APIs."""
 import base64
 import hashlib
 import os

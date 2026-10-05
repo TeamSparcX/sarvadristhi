@@ -6,7 +6,7 @@
     {"area": "Identification", "ask": "Recognise and document potential digital evidence and its context", "how": "Evidence registration with source path, size, kind and examiner; format family identified from bytes with all hypotheses kept", "where": "New analysis · Format hypotheses", "status": "supported"},
     {"area": "Acquisition", "ask": "Create a copy by a documented, repeatable method and verify it", "how": "Raw/E01 imaging with MD5 + SHA-256 (sarvadristhi acquire); evidence opened read-only and re-hashed after analysis", "where": "Case overview verdict · Custody chain", "status": "supported"},
     {"area": "Preservation", "ask": "Protect integrity and keep a chain of custody", "how": "Hash-chained custody ledger re-verified on open; every examiner action logged", "where": "Custody & replay", "status": "supported"},
-    {"area": "Auditability and repeatability", "ask": "Another examiner can evaluate and repeat the process", "how": "Replay capsule capsule: byte ranges of every clip, signed; replay on another machine reproduces each clip hash", "where": "Custody & replay", "status": "supported"},
+    {"area": "Auditability and repeatability", "ask": "Another examiner can evaluate and repeat the process", "how": "Replay capsule: byte ranges of every clip, signed; replay on another machine reproduces each clip hash", "where": "Custody & replay", "status": "supported"},
     {"area": "Justifiability", "ask": "Decisions and methods can be justified", "how": "Proof drawer shows source bytes → method → frames → clip → time basis for every result; limitations stated per format", "where": "Proof drawer · Capability matrix", "status": "supported"}]},
   {"id": "SWGDE 17-V-002 v1.3 (2025)", "title": "Best Practices for Data Acquisition from Digital Video Recorders",
    "items": [
@@ -17,7 +17,7 @@
     {"area": "Playback", "ask": "Keep the means to play proprietary formats", "how": "Clips remuxed to MP4 without re-encoding (H.264 and H.265); raw streams kept", "where": "Timeline & video", "status": "supported"}]},
   {"id": "NIST CFTT", "title": "Computer Forensics Tool Testing methodology",
    "items": [
-    {"area": "Test images with known content", "ask": "Measure tools against reference data", "how": "Pramanshala builds vendor-layout images with frame-level ground truth (H.264, H.265, Honeywell, relabelled disks)", "where": "Capability matrix", "status": "supported"},
+    {"area": "Test images with known content", "ask": "Measure tools against reference data", "how": "Evidence builder builds vendor-layout images with frame-level ground truth (H.264, H.265, Honeywell, relabelled disks)", "where": "Capability matrix", "status": "supported"},
     {"area": "Real-device validation", "ask": "Validate on representative real data", "how": "Recorder validation scores a real recorder image against a handwritten event log", "where": "Recorder validation", "status": "kit ready; no physical recorder run yet"}]},
   {"id": "NIST AI RMF 1.0", "title": "AI Risk Management Framework",
    "items": [

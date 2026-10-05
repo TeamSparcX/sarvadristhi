@@ -87,7 +87,7 @@ def _signatures(case_dir: Path, tracks: list[dict]) -> dict:
     from .ai import perception
     case_dir = Path(case_dir)
     ai_sha = _sha(case_dir / "ai" / "ai.json")[:16]
-    cache = case_dir.parent / ".cache" / f"anveshan2_{case_dir.name}_{ai_sha}.npz"
+    cache = case_dir.parent / ".cache" / f"personsearch_{case_dir.name}_{ai_sha}.npz"
     if cache.exists():
         z = np.load(cache, allow_pickle=True)
         return z["sigs"].item()
@@ -330,9 +330,9 @@ def redact(case_dir: Path, clip_id: str, keep: list[str], examiner: str = "", pu
     cap = cv2.VideoCapture(str(src))
     fps = cap.get(cv2.CAP_PROP_FPS) or float(clip.get("fps") or 10)
     w, h = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    rows = _load(case_dir, "avaran.json")
+    rows = _load(case_dir, "redaction.json")
     rid = f"A{len(rows) + 1:03d}"
-    out = case_dir / "avaran" / f"{rid}_{clip_id}_redacted.mp4"
+    out = case_dir / "redaction" / f"{rid}_{clip_id}_redacted.mp4"
     out.parent.mkdir(exist_ok=True)
     src_sha = clip.get("mp4_sha256") or _sha(src)
     blurred = frames = 0
@@ -372,29 +372,29 @@ def redact(case_dir: Path, clip_id: str, keep: list[str], examiner: str = "", pu
                            capture_output=True, text=True)
         if r.returncode or not out.exists():
             raise RuntimeError(r.stderr.strip()[-300:] or "ffmpeg failed")
-    row = {"id": rid, "clip": clip_id, "camera": clip.get("label"), "file": f"avaran/{out.name}", "sha256": _sha(out),
+    row = {"id": rid, "clip": clip_id, "camera": clip.get("label"), "file": f"redaction/{out.name}", "sha256": _sha(out),
            "source_mp4_sha256": src_sha, "kept_tracks": sorted(keep),
            "blurred_tracks": sorted(t for t in tracks if t not in keep), "frames": frames, "boxes_blurred": blurred,
            "method": "tracked person boxes from AI layer 2, interpolated between samples, +15% margin, "
                      "pixelate x12 + Gaussian blur; re-encoded H.264 CRF 20; original clip unchanged",
            "limits": "people the detector never tracked are NOT blurred: review the copy frame by frame before release",
            "purpose": (purpose or "")[:300], "examiner": (examiner or "")[:80], "utc": _utc()}
-    _save(case_dir, "avaran.json", rows + [row])
-    Ledger(case_dir / "custody.jsonl").append("avaran-redacted-copy", **{x: row[x] for x in
+    _save(case_dir, "redaction.json", rows + [row])
+    Ledger(case_dir / "custody.jsonl").append("redacted-copy", **{x: row[x] for x in
                                               ("id", "clip", "sha256", "source_mp4_sha256", "kept_tracks", "frames",
                                                "boxes_blurred", "purpose", "examiner")})
     return row
 
 
 def redactions(case_dir: Path) -> list:
-    return _load(case_dir, "avaran.json")
+    return _load(case_dir, "redaction.json")
 
 
 # ======================================================================= Evidence package
 PACKAGE_PARTS = ["report.pdf", "report.html", "case.json", "custody.jsonl", "frames.csv", "clips", "evidence",
-                 "capsule", "khandmudra", "avaran", "ai/ai.json", "reviews.json", "notes.json", "khandmudra.json",
-                 "avaran.json", "offsets.json"]
-VERIFY_README = """SAAKSHYAPOTLI - sealed evidence package ({case})
+                 "capsule", "segment_exports", "redaction", "ai/ai.json", "reviews.json", "notes.json", "segment_exports.json",
+                 "redaction.json", "offsets.json"]
+VERIFY_README = """EVIDENCE PACKAGE - sealed evidence package ({case})
 Sealed {utc} by {examiner} with Sarvadristhi. Key fingerprint {fp}.
 
 What is inside: the case report (PDF/HTML), the case data (case.json), the hash-chained custody
@@ -405,9 +405,9 @@ How to verify:
 1. MANIFEST.json lists the SHA-256 of every file. Recompute each (PowerShell: Get-FileHash <file>)
    and compare. Any difference means the file changed after sealing.
 2. MANIFEST.sig is an Ed25519 signature over MANIFEST.json by the public key in MANIFEST.json.
-   Verify with any Ed25519 tool, or: python -m sarvadristhi.anveshan verify <unzipped folder>
+   Verify with any Ed25519 tool, or: python -m sarvadristhi.person_search verify <unzipped folder>
 3. The package's own SHA-256 was written to the case custody ledger when it was sealed
-   (action "saakshyapotli-sealed").
+   (action "evidence-package-sealed").
 """
 
 
@@ -423,16 +423,16 @@ def package(case_dir: Path, examiner: str = "") -> dict:
         elif p.is_dir():
             files += sorted(f for f in p.rglob("*") if f.is_file())
     secret, public = ed25519.examiner_key()
-    manifest = {"format": "saakshyapotli/1", "case_id": case["case"]["case_id"], "sealed_utc": _utc(),
+    manifest = {"format": "evidence-package/1", "case_id": case["case"]["case_id"], "sealed_utc": _utc(),
                 "examiner": (examiner or case["case"].get("examiner") or "")[:80], "tool": "Sarvadristhi",
                 "public_key": public.hex(), "key_fingerprint": ed25519.fingerprint(public),
                 "files": {f.relative_to(case_dir).as_posix(): {"bytes": f.stat().st_size, "sha256": _sha(f)} for f in files}}
     mbytes = json.dumps(manifest, indent=1, sort_keys=True).encode()
     sig = ed25519.sign(secret, mbytes)
-    out_dir = case_dir / "potli"
+    out_dir = case_dir / "packages"
     out_dir.mkdir(exist_ok=True)
     stamp = manifest["sealed_utc"].replace(":", "").replace("-", "")
-    out = out_dir / f"{case_dir.name}_saakshyapotli_{stamp}.zip"
+    out = out_dir / f"{case_dir.name}_evidence_package_{stamp}.zip"
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_STORED, allowZip64=True) as z:
         z.writestr("MANIFEST.json", mbytes)
         z.writestr("MANIFEST.sig", sig.hex())
@@ -441,17 +441,17 @@ def package(case_dir: Path, examiner: str = "") -> dict:
                                                             fp=manifest["key_fingerprint"]).replace("\n", "\r\n"))
         for f in files:
             z.write(f, f.relative_to(case_dir).as_posix())
-    row = {"file": f"potli/{out.name}", "sha256": _sha(out), "bytes": out.stat().st_size, "files": len(files),
+    row = {"file": f"packages/{out.name}", "sha256": _sha(out), "bytes": out.stat().st_size, "files": len(files),
            "manifest_sha256": hashlib.sha256(mbytes).hexdigest(), "key_fingerprint": manifest["key_fingerprint"],
            "sealed_utc": manifest["sealed_utc"], "examiner": manifest["examiner"]}
-    rows = _load(case_dir, "potli.json") + [row]
-    _save(case_dir, "potli.json", rows)
-    Ledger(case_dir / "custody.jsonl").append("saakshyapotli-sealed", **row)
+    rows = _load(case_dir, "packages.json") + [row]
+    _save(case_dir, "packages.json", rows)
+    Ledger(case_dir / "custody.jsonl").append("evidence-package-sealed", **row)
     return row
 
 
 def packages(case_dir: Path) -> list:
-    return _load(case_dir, "potli.json")
+    return _load(case_dir, "packages.json")
 
 
 def verify_package(folder: Path) -> dict:
@@ -471,4 +471,4 @@ if __name__ == "__main__":
         r = verify_package(Path(sys.argv[2]))
         print(json.dumps(r, indent=1))
         sys.exit(0 if r["ok"] else 1)
-    print("usage: python -m sarvadristhi.anveshan verify <unzipped package folder>")
+    print("usage: python -m sarvadristhi.person_search verify <unzipped package folder>")

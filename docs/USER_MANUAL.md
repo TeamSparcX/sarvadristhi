@@ -61,7 +61,7 @@ listens only on this computer.
 | AI triage | add `--ai` (uses RF-DETR / YuNet / Ollama if installed, else OpenCV fallbacks) |
 | Live pull | `python -m sarvadristhi live --host 192.168.1.64 --user admin --password ... --channels 1,2 --start "2026-09-28 21:00:00" --end "2026-09-28 22:00:00" --case case1` |
 | Check custody | `python -m sarvadristhi verify-custody case1` |
-| Score on test evidence | `python -m pramanshala kit/` then `python -m sarvadristhi validate kit/ --universal --out results/` |
+| Score on test evidence | `python -m evidence_builder kit/` then `python -m sarvadristhi validate kit/ --universal --out results/` |
 
 ## What a case folder contains
 

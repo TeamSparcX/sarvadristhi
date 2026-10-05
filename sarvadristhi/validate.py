@@ -1,4 +1,4 @@
-"""Score recovery against a dvr-pramanshala build (frame-level ground truth).
+"""Score recovery against an evidence_builder build (frame-level ground truth).
 
 Metrics, per image and per mode:
   recovery rate      recovered surviving frames / surviving frames in ground truth
@@ -93,7 +93,7 @@ def validate(testkit_out: Path, universal: bool = False, out: Path | None = None
         out.mkdir(parents=True, exist_ok=True)
         (out / "validation.json").write_text(json.dumps(results, indent=2))
         (out / "validation.md").write_text(
-            f"# Validation on dvr-pramanshala {m['kit_version']}\n\nSynthetic content in vendor-exact containers. "
+            f"# Validation on evidence_builder {m['kit_version']}\n\nSynthetic content in vendor-exact containers. "
             f"Universal mode ignores vendor parsers and times frames from the burned-in clock, so its "
             f"temporal accuracy is scored against the time the camera displayed.\n\n" + results["markdown"] + "\n",
             encoding="utf-8")  # Windows: "±" must be written as UTF-8, not cp1252

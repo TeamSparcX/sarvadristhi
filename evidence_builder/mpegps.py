@@ -1,7 +1,7 @@
 """Minimal MPEG-2 Program Stream packer for H.264 (stream type 0x1B, stream id 0xE0).
 
 Each access unit becomes: pack header, [PSM before keyframes], one or more PES packets.
-Real Hikvision streams prefix a vendor 'IMKH' header; pramanshala omits it because its
+Real Hikvision streams prefix a vendor 'IMKH' header; evidence_builder omits it because its
 internal layout is not verified. FFmpeg's mpegps demuxer reads the result directly.
 """
 import struct

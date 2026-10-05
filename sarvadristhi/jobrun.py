@@ -47,12 +47,12 @@ def live(form: dict, say) -> int:
     return 0
 
 
-def kasauti(form: dict, say) -> int:
-    from .kasauti import run
-    k = form["kasauti"]
+def recorder_validation(form: dict, say) -> int:
+    from .recorder_validation import run
+    k = form["recorder_validation"]
     root = Path(form["case_dir"]).parent
     rep = run(k["image"], Path(k["events"]), Path(form["case_dir"]), k.get("device") or {}, bool(k.get("physical")),
-              float(k.get("recorder_offset_s") or 0), form["examiner"], registry=root / ".kasauti", log=say)
+              float(k.get("recorder_offset_s") or 0), form["examiner"], registry=root / ".recorder_validation", log=say)
     say(f"Recorder validation: mean coverage {rep['mean_coverage']}, logged events detected {rep['events_detected']}")
     say("DONE")
     return 0
@@ -63,8 +63,8 @@ def main(job_file: str) -> int:
     say = lambda m: print(m, flush=True)
     if form.get("kind") == "live":
         return live(form, say)
-    if form.get("kind") == "kasauti":
-        return kasauti(form, say)
+    if form.get("kind") == "recorder_validation":
+        return recorder_validation(form, say)
     sources = form.get("sources") or [form["source"]]
     if len(sources) > 1 or form.get("scenario"):
         from . import multicase

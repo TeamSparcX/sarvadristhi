@@ -53,7 +53,7 @@ class App:
         return "".join(ch for ch in case_id if ch.isalnum() or ch in "-_")
 
     def validate(self, form: dict) -> str | None:
-        if form.get("kind") in ("live", "kasauti"):
+        if form.get("kind") in ("live", "recorder_validation"):
             if not all(str(form.get(k) or "").strip() for k in ("case_id", "examiner")):
                 return "Case ID and examiner are required."
             name = self.case_name(form["case_id"])
@@ -64,12 +64,12 @@ class App:
                 if not all(str(lv.get(k) or "").strip() for k in ("host", "port", "user", "start", "end")) or not lv.get("channels"):
                     return "Recorder address, port, user, channels and the time window are required."
             else:
-                k = form.get("kasauti") or {}
+                k = form.get("recorder_validation") or {}
                 for key in ("image", "events"):
                     k[key] = self.clean_source(str(k.get(key) or ""))
                     if not k[key] or not Path(k[key]).exists():
                         return f"Not found: {k.get(key) or key}"
-            form["source"] = f"{form['kind']}:{(form.get('live') or {}).get('host') or (form.get('kasauti') or {}).get('image')}"
+            form["source"] = f"{form['kind']}:{(form.get('live') or {}).get('host') or (form.get('recorder_validation') or {}).get('image')}"
             return None
         if not all(str(form.get(k) or "").strip() for k in ("source", "case_id", "examiner")):
             return "Evidence source, case ID and examiner are all required."
@@ -129,7 +129,7 @@ class App:
                     "case_id": form["case_id"], "examiner": form["examiner"],
                     "case_dir": str(self.cases / job["case"]), "mode": form.get("mode", "auto"),
                     "analytics": "analytics" in form, "ai": bool(form.get("ai")), "scenario": bool(form.get("scenario")),
-                    "kind": form.get("kind"), "live": form.get("live"), "kasauti": form.get("kasauti")}
+                    "kind": form.get("kind"), "live": form.get("live"), "recorder_validation": form.get("recorder_validation")}
             secret = form.pop("password", None)     # never written to the job file or the log
             jobs_dir = self.cases / ".jobs"
             jobs_dir.mkdir(exist_ok=True)
@@ -255,8 +255,8 @@ def handler(app: App):
                 return self.json({"cancelled": app.cancel(parts[2])})
             if parts == ["api", "live", "mock"]:
                 return self.json(start_mock(app))
-            if parts == ["api", "kasauti", "rehearsal"]:
-                return self.json(kasauti_rehearsal(app))
+            if parts == ["api", "recorder_validation", "rehearsal"]:
+                return self.json(recorder_validation_rehearsal(app))
             if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("notes", "offset", "segment"):
                 cj = app.safe(parts[2], "case.json")
                 if not cj:
@@ -278,7 +278,7 @@ def handler(app: App):
                                                              b.get("purpose", ""), b.get("examiner", "")))
                 except (ValueError, RuntimeError) as e:
                     return self.json({"error": str(e)}, 400)
-            if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("redact", "potli"):
+            if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("redact", "package"):
                 cj = app.safe(parts[2], "case.json")
                 if not cj:
                     return self.json({"error": "no such case"}, 404)
@@ -287,12 +287,12 @@ def handler(app: App):
                     b = json.loads(self.rfile.read(n) or b"{}")
                 except ValueError:
                     return self.json({"error": "bad request"}, 400)
-                from . import anveshan
+                from . import person_search
                 try:
                     if parts[3] == "redact":
-                        return self.json(anveshan.redact(cj.parent, str(b.get("clip", "")), [str(x) for x in b.get("keep") or []],
+                        return self.json(person_search.redact(cj.parent, str(b.get("clip", "")), [str(x) for x in b.get("keep") or []],
                                                          b.get("examiner", ""), b.get("purpose", "")))
-                    return self.json(anveshan.package(cj.parent, b.get("examiner", "")))
+                    return self.json(person_search.package(cj.parent, b.get("examiner", "")))
                 except (ValueError, RuntimeError) as e:
                     return self.json({"error": str(e)}, 400)
             if len(parts) == 4 and parts[:2] == ["api", "case"] and parts[3] in ("ask", "capsule", "replay"):
@@ -414,17 +414,17 @@ def handler(app: App):
 
         def api(self, parts, q=None):
             q = q or {}
-            if len(parts) in (3, 4) and parts[0] == "case" and parts[2] == "anveshan":
+            if len(parts) in (3, 4) and parts[0] == "case" and parts[2] == "person_search":
                 cj = app.safe(parts[1], "case.json")
                 if not cj:
                     return self.json({"error": "no such case"}, 404)
-                from . import anveshan
+                from . import person_search
                 try:
                     if len(parts) == 4:
-                        return self.json(anveshan.search(cj.parent, parts[3]))
-                    return self.json({"candidates": anveshan.candidates(cj.parent),
-                                      "redactions": anveshan.redactions(cj.parent),
-                                      "packages": anveshan.packages(cj.parent), "disclaimer": anveshan.DISCLAIMER})
+                        return self.json(person_search.search(cj.parent, parts[3]))
+                    return self.json({"candidates": person_search.candidates(cj.parent),
+                                      "redactions": person_search.redactions(cj.parent),
+                                      "packages": person_search.packages(cj.parent), "disclaimer": person_search.DISCLAIMER})
                 except ValueError as e:
                     return self.json({"error": str(e)}, 400)
             if len(parts) == 4 and parts[0] == "case" and parts[2] == "diskmap":
@@ -436,18 +436,18 @@ def handler(app: App):
             if parts == ["cases"]:
                 return self.app_cases()
             if parts == ["capabilities"]:
-                from .kasauti import promote
+                from .recorder_validation import promote
                 from .workbench import capabilities
-                return self.json(promote(capabilities(), app.cases / ".kasauti"))
+                return self.json(promote(capabilities(), app.cases / ".recorder_validation"))
             if parts == ["standards"]:
                 return self.json(json.loads((Path(__file__).parent / "standards.json").read_text(encoding="utf-8")))
-            if parts == ["kasauti"]:
-                from .kasauti import runs
-                return self.json(runs(app.cases / ".kasauti"))
-            if parts == ["kasauti", "template.csv"]:
-                from .kasauti import TEMPLATE
+            if parts == ["recorder_validation"]:
+                from .recorder_validation import runs
+                return self.json(runs(app.cases / ".recorder_validation"))
+            if parts == ["recorder_validation", "template.csv"]:
+                from .recorder_validation import TEMPLATE
                 return self.send(200, TEMPLATE.encode(), "text/csv; charset=utf-8",
-                                 {"Content-Disposition": "attachment; filename=kasautipeeth_event_log.csv"})
+                                 {"Content-Disposition": "attachment; filename=recorder_validation_event_log.csv"})
             if len(parts) == 3 and parts[0] == "case" and parts[2] in ("notes", "offsets", "segments"):
                 cj = app.safe(parts[1], "case.json")
                 if not cj:
@@ -458,11 +458,11 @@ def handler(app: App):
                 cj = app.safe(parts[1], "case.json")
                 if not cj:
                     return self.json({"error": "no such case"}, 404)
-                from . import kanika
+                from . import frame_xray
                 try:
                     if parts[2] == "xray":
-                        return self.json(kanika.frames(cj.parent, parts[3]))
-                    return self.json(kanika.header(cj.parent, parts[3], int((q.get("offset") or ["0"])[0])))
+                        return self.json(frame_xray.frames(cj.parent, parts[3]))
+                    return self.json(frame_xray.header(cj.parent, parts[3], int((q.get("offset") or ["0"])[0])))
                 except (StopIteration, ValueError) as e:
                     return self.json({"error": str(e) or "not found"}, 404)
             if len(parts) == 3 and parts[0] == "case" and parts[2] in ("hypotheses", "reconcile", "capsule"):
@@ -564,7 +564,7 @@ _MOCK = {}
 
 
 def start_mock(app) -> dict:
-    """A simulated recorder on 127.0.0.1 serving Pramanshala exports through the real Dahua download
+    """A simulated recorder on 127.0.0.1 serving Evidence builder exports through the real Dahua download
     API and ONVIF, for demonstrating Live acquisition without hardware. Labelled as simulated everywhere."""
     import importlib.util
     root = Path(__file__).resolve().parents[1]
@@ -579,7 +579,7 @@ def start_mock(app) -> dict:
         nvr.__enter__()
         _MOCK["nvr"] = nvr
     nvr = _MOCK["nvr"]
-    start, end = "2026-09-28 21:14:20", "2026-09-28 21:15:00"     # inside the Pramanshala recording window
+    start, end = "2026-09-28 21:14:20", "2026-09-28 21:15:00"     # inside the Evidence builder recording window
     return {"host": "127.0.0.1", "port": nvr.port, "user": nvr.user, "password": nvr.password, "vendor": "dahua",
             "channels": [1, 2, 3], "start": start, "end": end, "simulated": True,
             "note": "Simulated recorder (tests/mock_nvr.py) serving modelled Dahua exports; demo credentials only."}
@@ -595,14 +595,14 @@ def regenerate_report(case_dir: Path) -> dict:
     rp = case_dir / "reviews.json"
     c["reviews"] = json.loads(rp.read_text(encoding="utf-8")) if rp.exists() else {}
     c["report_frames"] = examiner.report_frames(case_dir, c)
-    c["sakshilekh"] = examiner.notes(case_dir)
-    c["kaalshodhan"] = examiner.offsets(case_dir)["history"]
-    c["khandmudra"] = examiner.segments(case_dir)
+    c["findings"] = examiner.notes(case_dir)
+    c["clock_corrections"] = examiner.offsets(case_dir)["history"]
+    c["segment_exports"] = examiner.segments(case_dir)
     cap = case_dir / "capsule" / "capsule.json"
     if cap.exists():
         from .capsule import load
         body, ok = load(cap.parent)
-        c["punarnirmiti"] = {"signature_ok": ok, "key_fingerprint": body["key_fingerprint"], "created_utc": body["created_utc"],
+        c["replay_capsule"] = {"signature_ok": ok, "key_fingerprint": body["key_fingerprint"], "created_utc": body["created_utc"],
                              "clips": len(body["clips"]), "ranges": sum(len(k["ranges"]) for k in body["clips"])}
     led = Ledger(case_dir / "custody.jsonl")
     ok, status = led.verify()
@@ -614,10 +614,10 @@ def regenerate_report(case_dir: Path) -> dict:
     return {"ok": True, "report": rep, "hashes": hashes}
 
 
-def kasauti_rehearsal(app) -> dict:
-    """Write an event log from Pramanshala ground truth for a modelled disk, as an examiner would,
+def recorder_validation_rehearsal(app) -> dict:
+    """Write an event log from Evidence builder ground truth for a modelled disk, as an examiner would,
     so the kit can be rehearsed end to end. Clearly a rehearsal: it is not marked physical."""
-    from .kasauti import events_from_ground_truth
+    from .recorder_validation import events_from_ground_truth
     root = Path(__file__).resolve().parents[1]
     for img, gt in ((root / "kit" / "h265" / "images" / "hikvision_h265_formatted.img", root / "kit" / "h265" / "ground_truth" / "hikvision_h265_formatted.csv"),
                     (root / "kit" / "images" / "hikvision_formatted.img", root / "kit" / "ground_truth" / "hikvision_formatted.csv")):
@@ -625,7 +625,7 @@ def kasauti_rehearsal(app) -> dict:
             import csv as _csv
             with open(gt, newline="", encoding="utf-8") as f:
                 last = max(int(r["true_time_ms_utc"]) for r in _csv.DictReader(f) if r["origin"] == "original")
-            out = app.cases / ".kasauti_rehearsal" / f"{img.stem}_event_log.csv"
+            out = app.cases / ".recorder_validation_rehearsal" / f"{img.stem}_event_log.csv"
             out.parent.mkdir(parents=True, exist_ok=True)
             events_from_ground_truth(gt, out, format_time_ms=last + 600_000)
             return {"image": str(img), "events": str(out), "model": img.stem}
@@ -796,14 +796,14 @@ _DRIVES = {"t": 0, "v": []}
 
 
 def sources(app, drives: bool = True) -> dict:
-    """Evidence presets (pramanshala, demo media) and attached drives the examiner can pick."""
+    """Evidence presets (evidence_builder, demo media) and attached drives the examiner can pick."""
     root = Path(__file__).resolve().parents[1]
     kit = root / "kit"
     presets = []
     sc = kit / "scenario"
     items = [sc / "images" / n for n in ("DVR-A_hikvision.img", "DVR-B_dahua.img", "USB_shiftB.vhd")]
     if (sc / "scenario.json").exists() and all(p.exists() for p in items):
-        presets.append({"title": "OPERATION DEMO · one run, everything the PS asks",
+        presets.append({"title": "OPERATION DEMO · one run, every requirement",
                         "sub": "Real CCTV footage (MEVA, CC-BY-4.0) on a deliberately poisoned Hikvision DVR, Dahua DVR and "
                                "USB stick: format, overwrite, clock change, deleted export, edited export, disguised file",
                         "paths": [str(p) for p in items], "path": str(items[0]), "scenario": True,
@@ -814,7 +814,7 @@ def sources(app, drives: bool = True) -> dict:
             "dahua_overwritten.img": ("Dahua / CP Plus DVR - overwritten", "DHAV frames, torn frame at boundary"),
             "hikvision_intact.img": ("Hikvision DVR - intact", "Baseline"),
             "dahua_no_overlay.img": ("Dahua - no overlay, 3 cameras", "Sensor-noise fingerprint attribution")}
-    # real MEVA footage in modelled disks (pramanshala.realdemos); the synthetic versions are the fallback
+    # real MEVA footage in modelled disks (evidence_builder.realdemos); the synthetic versions are the fallback
     extra = [(("realdemo/images/cpplus_label_on_real_hikvision.img", "images/cpplus_label_on_hikvision.img"),
               "Relabelled DVR - 'CP PLUS' string, Hikvision structures", "Format hypotheses: the bytes decide, the label is reported as a conflict"),
              (("realdemo/images/hikvision_h265_formatted.img", "h265/images/hikvision_h265_formatted.img"),

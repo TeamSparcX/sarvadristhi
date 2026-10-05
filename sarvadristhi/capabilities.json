@@ -2,7 +2,7 @@
  "as_of": "2026-10-05",
  "levels": {
   "real": "Validated on a physical recorder disk with ground truth",
-  "synthetic": "Validated on modelled images (real video in the vendor layout, built by pramanshala)",
+  "synthetic": "Validated on modelled images (real video in the vendor layout, built by evidence_builder)",
   "via": "Handled by another family's parser because the format is shared; verify per model",
   "universal": "Vendor-neutral path: H.264 carving, overlay OCR, sensor fingerprint",
   "none": "Not supported in this version"

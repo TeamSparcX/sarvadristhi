@@ -1,4 +1,4 @@
-# Sarvadristhi — multi-vendor DVR/NVR forensic analysis (SIH26150)
+# Sarvadristhi — multi-vendor DVR/NVR forensic analysis
 
 > **Start here (Windows):** [docs/RUN_A_TO_Z.md](docs/RUN_A_TO_Z.md) — setup, demo data, running the
 > Forensic Workbench and the one-run "Operation demo".
@@ -14,10 +14,10 @@ from a formatted or partly overwritten disk — attributes each frame to a camer
 time, and produces a hashed, custody-logged court report with a data sheet for the
 BSA s.63(4) certificate.
 
-`pramanshala/` builds vendor-exact test evidence with frame-level ground truth, so every
+`evidence_builder/` builds vendor-exact test evidence with frame-level ground truth, so every
 claim below is measured, not asserted.
 
-## Measured results (dvr-pramanshala 0.4.0)
+## Measured results (evidence_builder 0.4.0)
 
 Native mode uses the vendor parser; universal mode ignores it and works from raw video plus
 the burned-in overlay or, without an overlay, the sensor-noise fingerprint.
@@ -46,20 +46,20 @@ Requires Python 3.10+, FFmpeg (libx264), Tesseract; WeasyPrint for PDF.
 
 ```bash
 pip install -e ".[pdf,e01,test]"                # plus ffmpeg, tesseract, ewf-tools on the system
-python -m pramanshala kit/                          # build test evidence (~1 min)
+python -m evidence_builder kit/                          # build test evidence (~1 min)
 python -m sarvadristhi ui --cases cases/                # browser UI on 127.0.0.1
 python -m sarvadristhi analyze kit/images/hikvision_overwritten.img --case case1 --case-id C-1 --examiner "Name"
 python -m sarvadristhi verify-custody case1
 python -m sarvadristhi validate kit/ --universal --out results/
-python -m pramanshala.h265 kit/h265                 # H.265 Dahua + Hikvision images with ground truth
-python -m pramanshala.honeywell kit/honeywell        # Honeywell-layout images (record format per DFRWS USA 2026)
-python -m pramanshala.labels kit/images/hikvision_intact.img kit/images/cpplus_label_on_hikvision.img
+python -m evidence_builder.h265 kit/h265                 # H.265 Dahua + Hikvision images with ground truth
+python -m evidence_builder.honeywell kit/honeywell        # Honeywell-layout images (record format per DFRWS USA 2026)
+python -m evidence_builder.labels kit/images/hikvision_intact.img kit/images/cpplus_label_on_hikvision.img
 python -m sarvadristhi capsule case1                     # seal a replay capsule (byte ranges of every clip, Ed25519)
 python -m sarvadristhi replay case1/capsule              # rebuild every clip from the image and compare hashes
-python -m pramanshala.realdemos kit/meva kit/scenario kit/realdemo   # the same disks from real MEVA footage
-python -m sarvadristhi kasauti DISK.img --events log.csv --out run1 --physical --make Hikvision --model ...
-python -m sarvadristhi kasauti-template          # event-log template for a real-recorder session
-python -m pytest -q                             # 38 tests, ~6 min (Windows: add --basetemp C:\Work\pytest-tmp)
+python -m evidence_builder.realdemos kit/meva kit/scenario kit/realdemo   # the same disks from real MEVA footage
+python -m sarvadristhi validate-recorder DISK.img --events log.csv --out run1 --physical --make Hikvision --model ...
+python -m sarvadristhi validate-recorder-template          # event-log template for a real-recorder session
+python -m pytest -q                             # 44 tests, ~8 min (Windows: add --basetemp C:\Work\pytest-tmp)
 ```
 
 Other commands: `detect`, `acquire` (raw or `--format e01`), `live` (pull from a running
@@ -89,7 +89,7 @@ A light, offline browser workbench on 127.0.0.1.
 
 | Module | What it does |
 |---|---|
-| **Case overview** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, PS flags |
+| **Case overview** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, requirement flags |
 | **Frame X-ray** | Frame-to-byte X-ray: while a clip plays, a disk ribbon and a hex panel follow the frame on screen, showing where its bytes are on the seized image and decoding the recorder's own header (DHAV, Honeywell record, MPEG-PS/PES, NAL) |
 | **Presentation** | Presentation mode: ten guided steps from seizure to verdict, with live case facts (`#/present/<case>`) |
 | **Format hypotheses** | Format hypotheses: every parser's interpretation of each disk with the checks it passes and fails; brand strings shown as weak context and as conflicts |
@@ -106,10 +106,10 @@ A light, offline browser workbench on 127.0.0.1.
 | **Capability matrix** | Capability matrix per OEM and function, with sources and trust levels |
 | **Standards** | How each step answers ISO/IEC 27037, SWGDE DVR acquisition guidance, NIST CFTT, NIST AI RMF, BSA s.63 and the DPDP Act |
 | **Live ingest** | Live ingest view while an analysis runs |
-| **Pramanshala** | The test-evidence builder (`python -m pramanshala ...`) |
+| **Evidence builder** | The test-evidence builder (`python -m evidence_builder ...`) |
 
-Regenerated reports now include key frames per camera, Examiner findings findings with their frames, Clock correction
-corrections, Segment export segments and the Replay capsule seal, and the report's own hashes are logged to custody.
+Regenerated reports now include key frames per camera, examiner findings with their frames, clock
+corrections, exported segments and the replay capsule seal, and the report's own hashes are logged to custody.
 
 Every frame carries an evidence level: **index-confirmed** (in the recorder's live index),
 **carved + timestamp** (recovered, with a recorder-written timestamp), or **content-only**
@@ -125,7 +125,7 @@ Every frame carries an evidence level: **index-confirmed** (in the recorder's li
 | Honeywell | Native: 20-byte record headers with microsecond time (Yoon & Hwang, DFRWS USA 2026); camera from overlay OCR | Channel list parsing; a real unit |
 | Uniview, TP-Link, Matrix, Godrej | Universal: H.264/H.265 carve + overlay OCR | One real unit each to write a native plugin |
 
-H.265, measured on the pramanshala (40–120 s per camera, 3 cameras): native Hikvision, Dahua and Honeywell
+H.265, measured on the evidence_builder (40–120 s per camera, 3 cameras): native Hikvision, Dahua and Honeywell
 recover 100% of surviving frames with 0 false positives and 100% correct recorder times. Universal mode
 recovers 100% with 0 false positives, but attributes 74–90% of frames to time and camera (H.264: 99.8%),
 because overlay OCR reads fewer labels and clocks on low-bitrate H.265 test footage.
@@ -134,23 +134,23 @@ because overlay OCR reads fewer labels and clocks on low-bitrate H.265 test foot
 
 | Component | State |
 | --- | --- |
-| Detection, Hikvision + Dahua plugins, universal carver, orchestrator | Built, validated on pramanshala |
-| Overlay OCR, label clustering, template match, temporal sequencing | Built, validated on pramanshala |
-| Sensor-fingerprint (PRNU-style) attribution with control | Built, validated on pramanshala |
+| Detection, Hikvision + Dahua plugins, universal carver, orchestrator | Built, validated on evidence_builder |
+| Overlay OCR, label clustering, template match, temporal sequencing | Built, validated on evidence_builder |
+| Sensor-fingerprint (PRNU-style) attribution with control | Built, validated on evidence_builder |
 | Clock drift and clock-change detection | Built, validated (true positive, no false alarms) |
 | Raw and E01 acquisition, E01 input, custody ledger | Built, tested |
 | Live acquisition: ONVIF + Dahua/Hikvision download APIs | Built, tested against a mock recorder only |
 | Clip export, report + s.63(4) data sheet, local UI | Built, tested |
 | Motion triage | Built; misses objects over full-frame moving texture |
 | AI triage (RF-DETR, YuNet, Qwen3-VL; OpenCV fallbacks) | Built; runs end to end; **model accuracy unvalidated** |
-| H.265 (native and universal paths, export, provenance, OCR) | Built, validated on pramanshala |
-| Honeywell native plugin (record headers, torn-record detection) | Built from the paper, validated on pramanshala and the paper's sample timestamp |
+| H.265 (native and universal paths, export, provenance, OCR) | Built, validated on evidence_builder |
+| Honeywell native plugin (record headers, torn-record detection) | Built from the paper, validated on evidence_builder and the paper's sample timestamp |
 | Replay capsule with Ed25519 seal (RFC 8032 vectors pass) | Built, tested (rebuild, tamper, edited capsule) |
 | Export integrity without a recorder copy (parameter-set change, timestamp gap, GOP cadence) | Built, tested on constructed splices and cuts |
 | Native plugins for Uniview, TP-Link, Matrix, Godrej | Not possible without samples (universal path covers them) |
 | Validation on real drives and real NVRs | **Not done: highest priority** |
 
-## Documents (PS deliverables)
+## Documents
 
 | Deliverable | File |
 | --- | --- |
@@ -159,7 +159,7 @@ because overlay OCR reads fewer labels and clocks on low-bitrate H.265 test foot
 | Standard operating procedure | `docs/SOP.md` |
 | User manual | `docs/USER_MANUAL.md` |
 | Validation report | `docs/VALIDATION_REPORT.md` |
-| Forensic images | built reproducibly by `python -m pramanshala` (real-drive images: pending) |
+| Forensic images | built reproducibly by `python -m evidence_builder` (real-drive images: pending) |
 | Functional prototype | this repository; sample report in `sample_output/` |
 
 ## Layout
@@ -170,7 +170,7 @@ sarvadristhi/            formats/ (DHAV, MPEG-PS, H.264, codec/H.265, honeywell)
                  report/, acquire, ewf, live, custody, pipeline, validate, ui,
                  capsule + ed25519 (replay), workbench (hypotheses, reconciliation, ask), integrity
 docs/            OEM analysis, architecture, SOP, user manual, validation report
-pramanshala/         reproducible test evidence with ground truth (H.264, h265, honeywell, labels)
+evidence_builder/         reproducible test evidence with ground truth (H.264, h265, honeywell, labels)
 tests/           test_dvrf.py + test_workbench.py (pytest), verify_testkit.py (independent-tool checks), mock_nvr.py
 sample_output/   validation table and a sample case report
 ```

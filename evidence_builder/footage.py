@@ -43,7 +43,7 @@ def font_path() -> str:
     for p in FONT_CANDIDATES:
         if Path(p).exists():
             return p
-    raise SystemExit("No monospace TTF font found; edit FONT_CANDIDATES in pramanshala/footage.py")
+    raise SystemExit("No monospace TTF font found; edit FONT_CANDIDATES in evidence_builder/footage.py")
 
 
 def require_ffmpeg():

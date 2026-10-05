@@ -1,4 +1,4 @@
-# Comparative analysis of DVR/NVR OEMs (SIH26150 deliverable)
+# Comparative analysis of DVR/NVR OEMs
 
 As of October 2026. "Verified" means checked by this project against independent tools or
 published research; "unverified" means no sample has been examined yet.
@@ -7,10 +7,10 @@ published research; "unverified" means no sample has been examined yet.
 
 | OEM | On-disk family | Video container | Recorder timestamps | Index | Sarvadristhi path today | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Hikvision | Hikvision FS: master sector `HIKVISION@HANGZHOU` at 0x200 | H.264/H.265 in data blocks (pramanshala models MPEG-PS) | HIKBTREE entries; per-block OFNI IDR tables | HIKBTREE + backup copy | Native | Structures from published research and an MIT parser derived from a real DVR; validated on pramanshala |
-| Dahua | DHFS 4.x | DHAV frames (header + footer) | In every DHAV header (second + ms counter) | DHFS (unpublished) | Native (frames); index not parsed | DHAV layout per FFmpeg `dhav.c`; validated on pramanshala |
+| Hikvision | Hikvision FS: master sector `HIKVISION@HANGZHOU` at 0x200 | H.264/H.265 in data blocks (evidence_builder models MPEG-PS) | HIKBTREE entries; per-block OFNI IDR tables | HIKBTREE + backup copy | Native | Structures from published research and an MIT parser derived from a real DVR; validated on evidence_builder |
+| Dahua | DHFS 4.x | DHAV frames (header + footer) | In every DHAV header (second + ms counter) | DHFS (unpublished) | Native (frames); index not parsed | DHAV layout per FFmpeg `dhav.c`; validated on evidence_builder |
 | CP Plus | Dahua family (listed as a Dahua OEM; Aditya Infotech is Dahua's exclusive India distributor) | DHAV | DHAV | DHFS | Native via Dahua | Verify per model: Aditya Infotech also manufactures at Kadapa |
-| Honeywell | Honeywell NVR FS (undocumented by vendor) | H.264/H.265 | Microsecond time in every 20-byte record header | Block/Channel lists (DFRWS USA 2026) | Native (records); camera from overlay OCR | Record layout from the paper, validated on pramanshala; channel list not parsed; needs a real unit |
+| Honeywell | Honeywell NVR FS (undocumented by vendor) | H.264/H.265 | Microsecond time in every 20-byte record header | Block/Channel lists (DFRWS USA 2026) | Native (records); camera from overlay OCR | Record layout from the paper, validated on evidence_builder; channel list not parsed; needs a real unit |
 | Uniview | Proprietary FS | Exports as .mp4/.ts | Unverified | Unverified | Universal | Needs one unit |
 | TP-Link (VIGI) | Unverified | Unverified | Unverified | Unverified | Universal | Needs one unit |
 | Matrix (India) | Unverified | Unverified | Unverified | Unverified | Universal | Needs one unit; request from Matrix (Vadodara) |

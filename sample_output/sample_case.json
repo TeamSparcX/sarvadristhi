@@ -1,6 +1,6 @@
 {
   "case": {
-    "case_id": "SIH26150-DEMO",
+    "case_id": "DEMO-001",
     "examiner": "Team SPARCX"
   },
   "generated_utc": "2026-10-04 11:42:05",
@@ -653,7 +653,7 @@
         "action": "case-opened",
         "actor": "root",
         "details": {
-          "case_id": "SIH26150-DEMO",
+          "case_id": "DEMO-001",
           "examiner": "Team SPARCX",
           "tool": "sarvadristhi 0.1.0"
         },

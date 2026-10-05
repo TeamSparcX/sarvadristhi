@@ -16,7 +16,7 @@ from pathlib import Path
 from . import __version__, ed25519
 from .custody import Ledger
 
-FORMAT = "punarnirmiti/1"
+FORMAT = "replay-capsule/1"
 DEFINITION = ("Replay = the clip's recovered elementary stream (or recovered file) is rebuilt from the listed "
               "byte ranges of the preserved image and its SHA-256 matches the hash recorded at analysis time. "
               "MP4 files are remuxed derivatives and are not replayed byte for byte.")

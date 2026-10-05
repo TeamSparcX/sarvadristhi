@@ -1,10 +1,10 @@
-"""Verify a built pramanshala against INDEPENDENT tools.
+"""Verify a built evidence_builder against INDEPENDENT tools.
 
   1. FFmpeg's dhav and mpegps demuxers decode every export with the expected frame count.
   2. FFmpeg's dhav demuxer reads the Dahua intact image data region (packet count).
   3. akira7799/hikvision-dvr-parser (MIT, real-DVR-derived) parses each Hikvision image:
      master sector, system logs, HIKBTREE entries and OFNI IDR tables vs ground truth.
-  4. The pramanshala's own dual-signature DHAV carver recovers exactly the ground-truth intact set.
+  4. The evidence_builder's own dual-signature DHAV carver recovers exactly the ground-truth intact set.
 
 Usage: python tests/verify.py OUT_DIR [--parser PATH_TO_hikvision-dvr-parser]
 """
@@ -20,7 +20,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from pramanshala import dhav  # noqa: E402
+from evidence_builder import dhav  # noqa: E402
 
 PARSER_REPO = "https://github.com/akira7799/hikvision-dvr-parser"
 results = []

@@ -1,4 +1,4 @@
-# Validation on dvr-pramanshala 0.4.0
+# Validation on evidence_builder 0.4.0
 
 | Image | Mode | Recovered | Recovery rate | False positives | Timed | Temporal accuracy (±1 s) | Camera accuracy (attributed) |
 | --- | --- | --- | --- | --- | --- | --- | --- |

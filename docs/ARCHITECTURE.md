@@ -61,7 +61,7 @@ flowchart TD
 | `report/` | Jinja2 template, SVG timeline, WeasyPrint PDF |
 | `pipeline` | One case run end to end |
 | `ui` | Local browser UI (127.0.0.1 only) |
-| `validate` | Scores recovery against pramanshala ground truth |
+| `validate` | Scores recovery against evidence_builder ground truth |
 
 ## Common data model
 
@@ -85,7 +85,7 @@ class NewPlugin(Plugin):
     def recover(self, src):  # -> Recovery with Frames mapped to the common model
 ```
 
-Register it in `sarvadristhi/plugins/__init__.py` (`NATIVE`). Add a pramanshala generator for the
+Register it in `sarvadristhi/plugins/__init__.py` (`NATIVE`). Add an evidence_builder generator for the
 format (or, better, a real image with a documented event log) and a validation test.
 Everything downstream (sweep, attribution, clips, timeline, report) works unchanged.
 

@@ -43,7 +43,7 @@ def test_codec_sniff_never_mistakes_h264_slices_for_hevc():
 
 @pytest.fixture(scope="module")
 def h265kit(tmp_path_factory):
-    from pramanshala.h265 import build_h265
+    from evidence_builder.h265 import build_h265
     out = tmp_path_factory.mktemp("h265kit")
     build_h265(out, seconds=40)
     return out
@@ -122,7 +122,7 @@ def test_integrity_flags_splice_and_cut(tmp_path):
 
 @pytest.fixture(scope="module")
 def hwkit(tmp_path_factory):
-    from pramanshala.honeywell import build
+    from evidence_builder.honeywell import build
     out = tmp_path_factory.mktemp("hwkit")
     build(out, seconds=40)
     return out
@@ -144,7 +144,7 @@ def test_honeywell_native_recovery(hwkit, name):
 @pytest.fixture(scope="module")
 def labelled_case(h265kit, tmp_path_factory):
     from sarvadristhi.pipeline import run
-    from pramanshala.labels import relabel
+    from evidence_builder.labels import relabel
     d = tmp_path_factory.mktemp("labelled")
     img = d / "cpplus_label_hikvision_h265.img"
     relabel(h265kit / "images" / "hikvision_h265_formatted.img", img)
@@ -195,8 +195,8 @@ def test_reconcile_and_ask(labelled_case):
 
 
 @needs_tools
-def test_examiner_records_kanika_and_report(labelled_case):
-    from sarvadristhi import examiner, kanika
+def test_examiner_records_frame_xray_and_report(labelled_case):
+    from sarvadristhi import examiner, frame_xray
     from sarvadristhi.custody import Ledger
     from sarvadristhi.ui import regenerate_report
     c = json.loads((labelled_case / "case.json").read_text(encoding="utf-8"))
@@ -210,11 +210,11 @@ def test_examiner_records_kanika_and_report(labelled_case):
     s = examiner.export_segment(labelled_case, k["id"], 2.0, 6.0, "excerpt", "pytest")
     assert s["frames"] > 0 and (labelled_case / s["file"]).exists() and s["source_mp4_sha256"] == k["mp4_sha256"]
     acts = [e["action"] for e in Ledger(labelled_case / "custody.jsonl").entries()]
-    assert {"sakshilekh-finding", "kaalshodhan-offset", "khandmudra-segment"} <= set(acts)
+    assert {"examiner-finding", "clock-offset", "segment-export"} <= set(acts)
     assert Ledger(labelled_case / "custody.jsonl").verify()[0]
-    x = kanika.frames(labelled_case, k["id"])                      # every frame of the clip mapped to its bytes
+    x = frame_xray.frames(labelled_case, k["id"])                      # every frame of the clip mapped to its bytes
     assert x["mode"] == "frames" and len(x["frames"]) == k["frames"]
-    h = kanika.header(labelled_case, "E1", x["frames"][0][1])
+    h = frame_xray.header(labelled_case, "E1", x["frames"][0][1])
     names = [f["name"] for f in h["fields"]]
     assert "MPEG-PS pack header" in names and "program stream map" in names and h["fields"][-1]["value"].startswith("type")
     r = regenerate_report(labelled_case)
@@ -223,25 +223,25 @@ def test_examiner_records_kanika_and_report(labelled_case):
     assert "Examiner findings" in html and "Recorder clock corrections" in html and "Exported segments" in html and "report_frames/" in html
 
 
-def test_kanika_decodes_vendor_headers():
+def test_frame_xray_decodes_vendor_headers():
     import struct
-    from sarvadristhi import kanika
+    from sarvadristhi import frame_xray
     hw = b"\x82\x80\x01\x00" + struct.pack("<HHIQ", 1920, 1080, 100, 0x000644865C1BCEE6) + b"\x00\x00\x00\x01\x67"
-    f = {x["name"]: x["value"] for x in kanika.decode(hw, "honeywell")}
+    f = {x["name"]: x["value"] for x in frame_xray.decode(hw, "honeywell")}
     assert f["resolution"] == "1920 x 1080" and f["recorder time (µs)"] == "2025-11-26 21:48:41.896"
     assert f["first NAL (H.264)"].startswith("type 7")
 
 
 @needs_tools
-def test_kasautipeeth_rehearsal(h265kit, labelled_case, tmp_path):
-    from sarvadristhi import kasauti
-    ev = kasauti.events_from_ground_truth(h265kit / "ground_truth" / "hikvision_h265_formatted.csv", tmp_path / "log.csv")
-    s = kasauti.score(labelled_case, kasauti.read_log(ev))
+def test_recorder_validation_rehearsal(h265kit, labelled_case, tmp_path):
+    from sarvadristhi import recorder_validation
+    ev = recorder_validation.events_from_ground_truth(h265kit / "ground_truth" / "hikvision_h265_formatted.csv", tmp_path / "log.csv")
+    s = recorder_validation.score(labelled_case, recorder_validation.read_log(ev))
     recs = [r for r in s["results"] if r["action"] == "recording"]
     assert recs and all(r["verdict"] == "recovered" for r in recs) and s["mean_coverage"] >= 0.99
-    caps = kasauti.promote(workbench.capabilities(), tmp_path / "registry")
+    caps = recorder_validation.promote(workbench.capabilities(), tmp_path / "registry")
     assert all(o["cells"]["recover"] != "real" for o in caps["oems"])      # nothing is "real" without a physical run
     (tmp_path / "registry").mkdir()
     (tmp_path / "registry" / "r.json").write_text(json.dumps({"physical_recorder": True, "family": "hikvision", "mean_coverage": 0.95}))
-    caps = kasauti.promote(workbench.capabilities(), tmp_path / "registry")
+    caps = recorder_validation.promote(workbench.capabilities(), tmp_path / "registry")
     assert next(o for o in caps["oems"] if o["oem"] == "Hikvision")["cells"]["recover"] == "real"

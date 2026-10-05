@@ -2,7 +2,7 @@
 encoded with x265. Most DVRs sold in India record H.265 by default, so every native and
 universal path has to be measured on it too.
 
-    python -m pramanshala.h265 OUT_DIR [--seconds 60]"""
+    python -m evidence_builder.h265 OUT_DIR [--seconds 60]"""
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -50,7 +50,7 @@ def build_h265(out_dir: Path, seconds: int = 60, fps: int = 10, width: int = 640
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(prog="python -m pramanshala.h265")
+    ap = argparse.ArgumentParser(prog="python -m evidence_builder.h265")
     ap.add_argument("out", type=Path)
     ap.add_argument("--seconds", type=int, default=60)
     a = ap.parse_args()

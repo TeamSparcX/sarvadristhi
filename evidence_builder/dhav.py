@@ -11,7 +11,7 @@ Layout follows FFmpeg's DHAV demuxer (libavformat/dhav.c):
   16 date                   u32 LE, packed sec|min<<6|hour<<12|day<<17|month<<22|(year-2000)<<26
   20 timestamp              u16 LE, millisecond counter (wraps)
   22 extension length       u8
-  23 checksum               u8  (FFmpeg ignores it; pramanshala writes sum(bytes 0..22) & 0xFF, UNVERIFIED)
+  23 checksum               u8  (FFmpeg ignores it; evidence_builder writes sum(bytes 0..22) & 0xFF, UNVERIFIED)
   24 extension records, then payload, then footer 'dhav' + u32 LE frame length.
 """
 import struct

@@ -1,6 +1,6 @@
-# Validation report (SIH26150 deliverable)
+# Validation report
 
-Sarvadristhi 0.1.0 on dvr-pramanshala 0.4.0 · October 2026
+Sarvadristhi 0.1.0 on evidence_builder 0.4.0 · October 2026
 
 ## Summary
 
@@ -17,7 +17,7 @@ real recorders.** Real-drive validation (section 6) is required before any opera
 
 ## 1. Test evidence
 
-`pramanshala` renders three cameras (H.264 Main, 640×360, 10 fps, 1 s GOP, 350 kbit/s) with a
+`evidence_builder` renders three cameras (H.264 Main, 640×360, 10 fps, 1 s GOP, 350 kbit/s) with a
 burned-in camera name and clock, a moving subject crossing each camera at a known time, known
 clock errors (0 s, +47 s, −312 s) and one camera whose clock is set back 15 minutes
 mid-recording. It writes them into:

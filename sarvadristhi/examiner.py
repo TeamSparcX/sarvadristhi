@@ -60,24 +60,24 @@ def add_note(case_dir: Path, clip_id: str, from_s: float, to_s: float, text: str
         raise ValueError("write the finding first")
     k = _clip(case_dir, clip_id)
     from_s, to_s = max(0.0, float(from_s)), max(float(from_s), float(to_s))
-    nid = f"S{len(_load(case_dir, 'sakshilekh.json')) + 1:03d}"
-    img = case_dir / "sakshilekh" / f"{nid}_{clip_id}.jpg"
+    nid = f"S{len(_load(case_dir, 'findings.json')) + 1:03d}"
+    img = case_dir / "findings" / f"{nid}_{clip_id}.jpg"
     ok = grab_frame(case_dir / "clips" / k["mp4_file"], from_s, img)
     note = {"id": nid, "clip": clip_id, "camera": k.get("label"), "from_s": round(from_s, 3), "to_s": round(to_s, 3),
             "recorder_from_ms": (k["start_ms"] + int(from_s * 1000)) if k.get("start_ms") else None,
             "recorder_to_ms": (k["start_ms"] + int(to_s * 1000)) if k.get("start_ms") else None,
             "text": text[:2000], "examiner": (examiner or "")[:80], "utc": _utc(),
-            "frame": f"sakshilekh/{img.name}" if ok else None, "frame_sha256": _sha(img) if ok else None,
+            "frame": f"findings/{img.name}" if ok else None, "frame_sha256": _sha(img) if ok else None,
             "clip_mp4_sha256": k.get("mp4_sha256")}
-    rows = _load(case_dir, "sakshilekh.json") + [note]
-    _save(case_dir, "sakshilekh.json", rows)
-    Ledger(case_dir / "custody.jsonl").append("sakshilekh-finding", **{x: note[x] for x in
+    rows = _load(case_dir, "findings.json") + [note]
+    _save(case_dir, "findings.json", rows)
+    Ledger(case_dir / "custody.jsonl").append("examiner-finding", **{x: note[x] for x in
                                               ("id", "clip", "from_s", "to_s", "text", "examiner", "frame_sha256")})
     return note
 
 
 def notes(case_dir: Path) -> list:
-    return _load(case_dir, "sakshilekh.json")
+    return _load(case_dir, "findings.json")
 
 
 # ------------------------------------------------------------------ Clock correction
@@ -90,15 +90,15 @@ def set_offset(case_dir: Path, evidence: str, offset_s: float, reason: str, exam
         raise ValueError("state how the offset was established (e.g. recorder clock vs NTP at seizure)")
     row = {"evidence": evidence, "offset_s": round(float(offset_s), 3), "reason": reason.strip()[:500],
            "reference": (reference or "")[:200], "examiner": (examiner or "")[:80], "utc": _utc()}
-    rows = _load(case_dir, "kaalshodhan.json") + [row]
-    _save(case_dir, "kaalshodhan.json", rows)
-    Ledger(case_dir / "custody.jsonl").append("kaalshodhan-offset", **row)
+    rows = _load(case_dir, "clock_corrections.json") + [row]
+    _save(case_dir, "clock_corrections.json", rows)
+    Ledger(case_dir / "custody.jsonl").append("clock-offset", **row)
     return row
 
 
 def offsets(case_dir: Path) -> dict:
     """{'current': {evidence: row}, 'history': [...]}"""
-    rows = _load(case_dir, "kaalshodhan.json")
+    rows = _load(case_dir, "clock_corrections.json")
     cur = {}
     for r in rows:
         cur[r["evidence"]] = r
@@ -114,8 +114,8 @@ def export_segment(case_dir: Path, clip_id: str, from_s: float, to_s: float, pur
     from_s, to_s = max(0.0, float(from_s)), float(to_s)
     if to_s <= from_s:
         raise ValueError("the end must be after the start")
-    sid = f"K{len(_load(case_dir, 'khandmudra.json')) + 1:03d}"
-    out = case_dir / "khandmudra" / f"{sid}_{clip_id}_{from_s:.1f}-{to_s:.1f}.mp4"
+    sid = f"K{len(_load(case_dir, 'segment_exports.json')) + 1:03d}"
+    out = case_dir / "segment_exports" / f"{sid}_{clip_id}_{from_s:.1f}-{to_s:.1f}.mp4"
     out.parent.mkdir(exist_ok=True)
     src = case_dir / "clips" / k["mp4_file"]
     r = subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{from_s:.3f}", "-to", f"{to_s:.3f}", "-i", str(src),
@@ -130,19 +130,19 @@ def export_segment(case_dir: Path, clip_id: str, from_s: float, to_s: float, pur
            "duration_s": float(info.get("format", {}).get("duration") or 0),
            "frames": int((info.get("streams") or [{}])[0].get("nb_read_packets") or 0),
            "recorder_from_ms": (k["start_ms"] + int(from_s * 1000)) if k.get("start_ms") else None,
-           "file": f"khandmudra/{out.name}", "sha256": _sha(out), "source_mp4_sha256": k.get("mp4_sha256"),
+           "file": f"segment_exports/{out.name}", "sha256": _sha(out), "source_mp4_sha256": k.get("mp4_sha256"),
            "method": "ffmpeg stream copy (no re-encode); starts at the nearest earlier keyframe",
            "purpose": (purpose or "")[:300], "examiner": (examiner or "")[:80], "utc": _utc()}
-    rows = _load(case_dir, "khandmudra.json") + [row]
-    _save(case_dir, "khandmudra.json", rows)
-    Ledger(case_dir / "custody.jsonl").append("khandmudra-segment", **{x: row[x] for x in
+    rows = _load(case_dir, "segment_exports.json") + [row]
+    _save(case_dir, "segment_exports.json", rows)
+    Ledger(case_dir / "custody.jsonl").append("segment-export", **{x: row[x] for x in
                                               ("id", "clip", "asked_from_s", "asked_to_s", "frames", "sha256",
                                                "source_mp4_sha256", "purpose", "examiner")})
     return row
 
 
 def segments(case_dir: Path) -> list:
-    return _load(case_dir, "khandmudra.json")
+    return _load(case_dir, "segment_exports.json")
 
 
 # ------------------------------------------------------------------ report frames

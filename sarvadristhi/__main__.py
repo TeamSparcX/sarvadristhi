@@ -53,7 +53,7 @@ def main():
     v = sub.add_parser("verify-custody", help="check a case's hash-chained custody ledger")
     v.add_argument("case", type=Path)
 
-    t = sub.add_parser("validate", help="score recovery against a dvr-pramanshala build")
+    t = sub.add_parser("validate", help="score recovery against an evidence_builder build")
     t.add_argument("testkit_out", type=Path)
     t.add_argument("--universal", action="store_true", help="also score the vendor-agnostic path")
     t.add_argument("--out", type=Path)
@@ -66,9 +66,9 @@ def main():
     rp.add_argument("--image", action="append", default=[], metavar="EID=PATH",
                     help="where an evidence image is on this machine, e.g. E1=D:\\evidence\\dvr.img (repeatable)")
 
-    kz = sub.add_parser("kasauti", help="Recorder validation: score a real recorder image against a handwritten event log")
+    kz = sub.add_parser("validate-recorder", help="Recorder validation: score a real recorder image against a handwritten event log")
     kz.add_argument("image")
-    kz.add_argument("--events", required=True, type=Path, help="event log CSV (sarvadristhi kasauti-template prints one)")
+    kz.add_argument("--events", required=True, type=Path, help="event log CSV (sarvadristhi validate-recorder-template prints one)")
     kz.add_argument("--out", required=True, type=Path)
     kz.add_argument("--make", default="")
     kz.add_argument("--model", default="")
@@ -77,18 +77,18 @@ def main():
     kz.add_argument("--physical", action="store_true", help="the image comes from a physical recorder")
     kz.add_argument("--recorder-offset", type=float, default=0.0, help="recorder clock minus reference clock, seconds")
     kz.add_argument("--examiner", default="")
-    sub.add_parser("kasauti-template", help="print the Recorder validation event-log template")
+    sub.add_parser("validate-recorder-template", help="print the Recorder validation event-log template")
 
     x = ap.parse_args()
-    if x.cmd == "kasauti-template":
-        from .kasauti import TEMPLATE
+    if x.cmd == "validate-recorder-template":
+        from .recorder_validation import TEMPLATE
         print(TEMPLATE, end="")
         return
-    if x.cmd == "kasauti":
-        from .kasauti import run
+    if x.cmd == "validate-recorder":
+        from .recorder_validation import run
         r = run(x.image, x.events, x.out, {"make": x.make, "model": x.model, "serial": x.serial, "firmware": x.firmware},
                 x.physical, x.recorder_offset, x.examiner)
-        print((x.out / "kasauti.md").read_text(encoding="utf-8"))
+        print((x.out / "recorder_validation.md").read_text(encoding="utf-8"))
         return
     if x.cmd == "capsule":
         from .capsule import build

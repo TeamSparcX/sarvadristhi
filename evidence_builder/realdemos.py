@@ -3,7 +3,7 @@
 layout (overwritten), a Honeywell layout (overwritten), and a relabelled copy of DVR-A. Footage is
 real; the disks and every manipulation are modelled, and each image's ground truth is written.
 
-    python -m pramanshala.realdemos kit/meva kit/scenario kit/realdemo [--seconds 120]"""
+    python -m evidence_builder.realdemos kit/meva kit/scenario kit/realdemo [--seconds 120]"""
 import argparse
 import json
 from pathlib import Path
@@ -80,7 +80,7 @@ def build(meva: Path, scenario: Path, out: Path, seconds: int = 120) -> dict:
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(prog="python -m pramanshala.realdemos")
+    ap = argparse.ArgumentParser(prog="python -m evidence_builder.realdemos")
     ap.add_argument("meva", type=Path)
     ap.add_argument("scenario", type=Path)
     ap.add_argument("out", type=Path)

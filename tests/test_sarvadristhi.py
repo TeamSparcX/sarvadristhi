@@ -1,4 +1,4 @@
-"""End-to-end tests against a freshly built (short) dvr-pramanshala evidence set.
+"""End-to-end tests against a freshly built (short) evidence_builder evidence set.
 
 Run: python -m pytest -q tests/        (needs ffmpeg with libx264, tesseract)"""
 import csv
@@ -24,7 +24,7 @@ SECONDS = 45
 
 @pytest.fixture(scope="session")
 def kit(tmp_path_factory):
-    from pramanshala.build import build
+    from evidence_builder.build import build
     out = tmp_path_factory.mktemp("kit")
     build(out, seconds=SECONDS)
     return out
@@ -125,7 +125,7 @@ def test_acquisition_hashes_match(tmp_path):
 
 def test_h264_carver_ignores_noise():
     import random
-    rnd = random.Random(26150)
+    rnd = random.Random(4242)
     noise = bytes(rnd.getrandbits(8) for _ in range(2_000_000))
     assert len(list(h264.carve_aus(noise, 0, len(noise)))) <= 2
 
@@ -181,7 +181,7 @@ def test_live_dahua_pull_is_time_filtered_and_logged(mock_nvr, tmp_path):
 
 
 @needs_tools
-def test_setugrahan_job_acquires_analyses_and_never_stores_the_password(mock_nvr, tmp_path, monkeypatch):
+def test_live_acquisition_job_acquires_analyses_and_never_stores_the_password(mock_nvr, tmp_path, monkeypatch):
     from sarvadristhi import jobrun
     case = tmp_path / "LIVE-1"
     form = {"kind": "live", "case_id": "LIVE-1", "examiner": "pytest", "case_dir": str(case), "ai": False,

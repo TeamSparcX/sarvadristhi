@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File scripts\run_demo.ps1        # every tim
 ```
 
 The browser opens at **http://127.0.0.1:8765**. Click **+ New analysis**, pick
-**"OPERATION DEMO · one run, everything the PS asks"**, type your name, click **Start analysis**. It takes
+**"OPERATION DEMO · one run, every requirement"**, type your name, click **Start analysis**. It takes
 about 10 minutes with a GPU. A finished copy of that case (**OP-2013**) is included, so you can explore the
 results immediately from the **Cases** page.
 
@@ -68,7 +68,7 @@ This builds the synthetic kit, downloads the MEVA clips, cuts the two-camera foo
 scenario, and creates both virtual NTFS USB sticks. Each USB stick needs **one UAC prompt**, because Windows
 only lets Administrators run `diskpart` (create, format, attach and detach a virtual disk) and `fsutil`
 (enable the NTFS change journal). Only `.vhd` files are touched, never a physical disk. The scripts that
-build them are `pramanshala\make_usb_vhd.ps1` and `pramanshala\make_scenario_usb.ps1`. Rebuilt data gets new
+build them are `evidence_builder\make_usb_vhd.ps1` and `evidence_builder\make_scenario_usb.ps1`. Rebuilt data gets new
 hashes, because NTFS records new timestamps, so the manifest check will report mismatches for the
 rebuilt files; the analysis results are equivalent.
 
@@ -78,7 +78,7 @@ rebuilt files; the analysis results are equivalent.
 |---|---|
 | **New analysis** | Presets, or paste evidence paths (one per line). One analysis runs at a time; more queue up. |
 | **Live job** | The stage tracker is driven by events from the analysis itself; the log shows every step. |
-| **Command** | SIH26150 flag board, poisoned-evidence scorecard (planted vs caught), evidence cards with format coverage, verified AI summary, AI accuracy against human labels |
+| **Command** | Requirement flag board, poisoned-evidence scorecard (planted vs caught), evidence cards with format coverage, verified AI summary, AI accuracy against human labels |
 | **Timeline & video** | All cameras on one recorder clock; synchronised video wall with AI boxes; click the timeline to jump |
 | **Disk & hex** | Where each kind of data sits on each image; click a cell to read the original bytes (read-only) |
 | **Provenance** | Each USB export matched frame-by-frame to recorder footage: only-surviving-copy and removed seconds |

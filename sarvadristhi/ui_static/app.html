@@ -387,7 +387,7 @@ function heroArt(){return `<svg viewBox="0 0 560 320" preserveAspectRatio="xMidY
 
 // ---------------------------------------------------------------- shell
 const NAV=[["#/","home","Overview","all cases"],["#/new","plus","New analysis","image, USB, exports"],["#/live","bridge","Live acquisition","from a running recorder"],
- ["#/kasauti","touch","Recorder validation","score a real recorder"],["#/caps","matrix","Capability matrix","support per OEM"],["#/maryada","scale","Standards","what each guideline asks"]];
+ ["#/recorder_validation","touch","Recorder validation","score a real recorder"],["#/caps","matrix","Capability matrix","support per OEM"],["#/standards","scale","Standards","what each guideline asks"]];
 const navItem=(href,ic,t,sub,on,extra="")=>`<a href="${href}" class="${on?"on":""}">${ico(ic)}<span class="nt"><span>${t}</span><small>${sub}</small></span>${extra}</a>`;
 function sideHTML(){const c=CASE,d=CDIR;const tab=(location.hash.split("/")[3]||"command");
  const cur=location.hash||"#/";
@@ -404,7 +404,7 @@ function topHTML(crumbs,right=""){$("#top").innerHTML=`<div class="crumb">${crum
 function route(){const h=location.hash.slice(2).split("/");clearInterval(window._poll);closeInsp(true);
  if(h[0]==="new")return newPage();if(h[0]==="job")return jobPage(h[1]);if(h[0]==="caps")return capsPage();
  if(h[0]==="present"&&h[1]){const d=decodeURIComponent(h[1]);if(!CASE||CDIR!==d){api("/api/case/"+encodeURIComponent(d)).then(c=>{CASE=norm(c);CDIR=d;present()})}else present();return}
- if(h[0]==="live")return livePage();if(h[0]==="kasauti")return kasautiPage();if(h[0]==="maryada")return maryadaPage();
+ if(h[0]==="live")return livePage();if(h[0]==="recorder_validation")return recorderValidationPage();if(h[0]==="standards")return standardsPage();
  if(h[0]==="case"){window._arg=h[3]?decodeURIComponent(h.slice(3).join("/")):null;return casePage(decodeURIComponent(h[1]),h[2]||"command")}home()}
 
 // ================================================================ overview
@@ -413,7 +413,7 @@ async function home(){sideHTML();topHTML(`<b>Overview</b>`,`<span class="pill"><
  const best=cs.find(c=>c.poisons&&c.poisons[1])||cs[0];
  const link=t=>best?`#/case/${encodeURIComponent(best.dir)}/${t}`:"#/new";
  $("#main").innerHTML=`<section class="hero"><div class="art">${heroArt()}</div>
- <div class="txt"><span class="eyebrow" style="color:var(--mint)">SIH26150 · multi-vendor DVR/NVR forensics</span><h1>Every frame traced to the bytes it came from</h1>
+ <div class="txt"><span class="eyebrow" style="color:var(--mint)">multi-vendor DVR/NVR forensics</span><h1>Every frame traced to the bytes it came from</h1>
  <p>Sarvadristhi reads recorder disks, USB sticks and exports from any brand, recovers deleted and overwritten footage, puts every camera on one clock, and seals a replayable record of how each clip was produced.</p>
  <div class="bul"><span><span class="dot"></span>Read-only, hashed before and after</span><span><span class="dot"></span>Format decided by bytes, not labels</span><span><span class="dot"></span>Signed replay capsules</span></div>
  <div class="row" style="margin-top:6px"><a class="btn mint" href="#/new">${ico("plus")}Start an analysis</a>${best?`<a class="btn ghostd" href="${link("command")}">Open ${esc(best.case_id)}</a>`:""}</div></div></section>
@@ -440,7 +440,7 @@ const STAGE_KEYS=["acquire","identify","recover","attribute","clocks","clips","p
 // ================================================================ capability matrix
 async function capsPage(){sideHTML();topHTML(`<b>Capability matrix</b>`,`<span class="pill">as of ${esc((await capsData()).as_of)}</span>`);const m=await capsData();
  const cell=v=>`<span class="lv lv-${v}">${({real:"real disk",synthetic:"modelled",via:"via Dahua",universal:"universal",none:"—"})[v]||v}</span>`;
- $("#main").innerHTML=`<div class="row"><div class="col" style="gap:4px"><h1>Capability matrix <span class="mut" style="font-weight:500;font-size:18px">· what Sarvadristhi supports, per OEM</span></h1><p class="note">Every claim names its level and its sources. “Modelled” means validated on real footage written into the vendor's on-disk layout by Pramanshala. A cell becomes “real disk” only after a passing physical-recorder run in Recorder validation.</p></div></div>
+ $("#main").innerHTML=`<div class="row"><div class="col" style="gap:4px"><h1>Capability matrix <span class="mut" style="font-weight:500;font-size:18px">· what Sarvadristhi supports, per OEM</span></h1><p class="note">Every claim names its level and its sources. “Modelled” means validated on real footage written into the vendor's on-disk layout by Evidence builder. A cell becomes “real disk” only after a passing physical-recorder run in Recorder validation.</p></div></div>
  <div class="card pad0"><div class="tblwrap"><table class="cap"><tr><th>OEM</th><th>Trust</th>${m.functions.map(f=>`<th>${esc(f[1])}</th>`).join("")}<th style="text-align:left">Basis</th></tr>
  ${m.oems.map(o=>`<tr><td><b>${esc(o.oem)}</b><div class="tiny mut">${esc(o.family==="unknown"?"universal path":o.family)}</div></td><td><span class="chip ${o.trust==="L2"?"c-ok":o.trust==="L1"?"c-info":"c-n"}" title="${esc(m.trust[o.trust])}">${o.trust}</span></td>${m.functions.map(f=>`<td>${cell(o.cells[f[0]])}</td>`).join("")}<td style="text-align:left;min-width:220px;max-width:300px" class="tiny"><div>${esc(o.note)}</div>${o.sources.length?`<div class="dim">${o.sources.map(esc).join(" · ")}</div>`:""}</td></tr>`).join("")}</table></div></div>
  <div class="grid g2"><div class="card"><h3>Levels</h3><div class="col" style="gap:8px;margin-top:10px">${Object.entries(m.levels).map(([k,v])=>`<div class="row" style="flex-wrap:nowrap">${cell(k)}<span class="small mut">${esc(v)}</span></div>`).join("")}</div></div>
@@ -517,7 +517,7 @@ function jobPage(id){sideHTML();topHTML(`<a href="#/">Overview</a> / <b id="jtit
   $("#jel").textContent=j.state==="queued"?"waiting for the GPU":`${j.elapsed_s}s`;$("#jcancel").style.display=(j.state==="running"||j.state==="queued")?"":"none";
   if(j.state==="failed")$("#jmsg").innerHTML=`<div class="card" style="border-color:var(--crit)"><h3 style="color:var(--crit)">Analysis failed</h3><pre>${esc(L.slice(-14).join("\n"))}</pre><a class="btn sm" href="#/new">Try again</a></div>`;
   if(j.state==="cancelled")$("#jmsg").innerHTML=`<div class="card">Cancelled. Partial output stays in the case folder.</div>`;
-  if(j.state==="done"){$("#jdone").innerHTML=j.kind==="kasauti"?`<a class="btn pri" href="#/kasauti">See the Recorder validation result →</a>`:`<a class="btn pri" href="#/case/${encodeURIComponent(j.case)}">Open the workbench for ${esc(j.case)} →</a>`;CASE=null}
+  if(j.state==="done"){$("#jdone").innerHTML=j.kind==="recorder_validation"?`<a class="btn pri" href="#/recorder_validation">See the Recorder validation result →</a>`:`<a class="btn pri" href="#/case/${encodeURIComponent(j.case)}">Open the workbench for ${esc(j.case)} →</a>`;CASE=null}
   if(!["running","queued"].includes(j.state))clearInterval(window._poll)};
  $("#jcancel").onclick=async()=>{await fetch(`/api/job/${id}/cancel`,{method:"POST"});tick()};tick();window._poll=setInterval(tick,1000)}
 
@@ -536,7 +536,7 @@ function norm(c){
 const TABS=[["command","Case overview","grid","verdict, cameras, findings"],["video","Timeline & video","film","all cameras, one clock"],["xray","Frame X-ray","xray","every frame to its bytes"],
  ["hypotheses","Format hypotheses","layers","which format, and why"],["disk","Disk & hex","disk","what was found where"],["reconcile","Reconciliation","matrix","where sources agree"],
  ["provenance","Provenance","prov","exports vs recorder"],["time","Clock analysis","clock","offsets, changes, robustness"],["ask","Ask the case","ask","answers from case data"],
- ["ai","AI reasoning","ai","four layers, inspectable"],["anveshan","Person search","search","find a person · redact · seal"],["review","Review & report","check","findings, segments, report"],["custody","Custody chain","lock","ledger · replay capsule"]];
+ ["ai","AI reasoning","ai","four layers, inspectable"],["person_search","Person search","search","find a person · redact · seal"],["review","Review & report","check","findings, segments, report"],["custody","Custody chain","lock","ledger · replay capsule"]];
 async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<div class="card empty">Loading case…</div>`;CASE=norm(await api("/api/case/"+encodeURIComponent(dir)));CDIR=dir;SEL=null}
  const c=CASE,F=p=>`/case/${encodeURIComponent(dir)}/file/${p}`;window.F=F;sideHTML();
  const po=c.poison_scorecard||[];
@@ -546,7 +546,7 @@ async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<di
    <button class="btn" onclick="openInsp()">${ico("eye")}Proof</button><button class="btn" onclick="present()">${ico("play")}Present</button><a class="btn pri" href="#/case/${encodeURIComponent(dir)}/custody">${ico("replay")}Replay capsule</a>`);
  $("#main").innerHTML=`${c.scenario?`<div class="banner">${ico("warn",'width="16" height="16" style="flex:none;margin-top:1px"')}<span><b>Test bench.</b> ${esc(c.scenario.nature)}. Footage: ${esc(c.scenario.footage.dataset)} · ${esc(c.scenario.footage.license)}.</span></div>`:""}
  <div id="tabc" class="col" style="gap:14px"></div>`;
- ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,anveshan:tAnveshan,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
+ ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,person_search:tPersonSearch,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
  renderInsp()}
 const stillURL=(k,t=3)=>k&&k.mp4_file?`/api/case/${encodeURIComponent(CDIR)}/still/${encodeURIComponent(k.mp4_file)}?t=${t}`:"";
 
@@ -611,7 +611,7 @@ function tCommand(c,F){const ps=c.ps_flags||[],po=c.poison_scorecard||[],sc=c.ai
  ${po.length?`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Poisoned-evidence scorecard</h3><span class="tiny mut">what was planted on the test bench, and what caught it</span></div><div class="tblwrap"><table><tr><th>#</th><th>Item</th><th>Planted manipulation</th><th>Result</th><th>Caught by</th></tr>${po.map(p=>`<tr><td class="mono">${p.id}</td><td style="white-space:nowrap">${esc(p.evidence)}</td><td>${esc(p.what)}<div class="tiny dim">${esc(p.planted)}</div></td><td>${p.caught?`<span class="chip c-ok">${ico("check",'width="12" height="12"')}Caught</span>`:`<span class="chip c-crit">Missed</span>`}</td><td class="small">${p.by.map(esc).join("<br>")}</td></tr>`).join("")}</table></div></div>`:""}
  <div class="grid g2"><div class="card"><div class="hd"><h3>Findings</h3><span class="sp"></span><span class="tiny mut">${c.findings.length} · by severity</span></div><div style="max-height:420px;overflow:auto">${crit.map(({f,i})=>`<div class="fl" onclick="select('finding',${i})"><span class="sev" style="background:${sevCol(f.severity)}"></span><div style="flex:1;min-width:0"><div class="small">${esc(f.summary)}</div><div class="tiny mono dim">${esc(f.kind)}${f.evidence?" · "+esc(f.evidence):""}</div></div></div>`).join("")||`<div class="mut">None</div>`}</div></div>
   <div class="card"><div class="hd"><h3>What happened</h3><span class="sp"></span><span class="tiny mut">AI summary, every sentence checked</span></div>${n&&n.sentences&&n.sentences.length?narrHTML(n):`<div class="mut small">No AI summary for this case.</div>`}</div></div>
- ${ps.length?`<div class="card"><div class="hd"><h3>SIH26150 requirements this case demonstrates</h3><span class="sp"></span><span class="chip c-ok">${ps.filter(f=>f.status==="demonstrated").length} / ${ps.length}</span></div><div class="flags">${ps.map(f=>`<div class="flag ${f.status==="demonstrated"?"on":"off"}" onclick="location.hash='#/case/${encodeURIComponent(CDIR)}/${go[f.where]||"command"}'"><div class="s">${f.status==="demonstrated"?"● demonstrated":"○ not shown"}</div><div class="t">${esc(f.requirement)}</div><div class="e">${esc(f.evidence)}</div></div>`).join("")}</div></div>`:""}
+ ${ps.length?`<div class="card"><div class="hd"><h3>Requirements this case demonstrates</h3><span class="sp"></span><span class="chip c-ok">${ps.filter(f=>f.status==="demonstrated").length} / ${ps.length}</span></div><div class="flags">${ps.map(f=>`<div class="flag ${f.status==="demonstrated"?"on":"off"}" onclick="location.hash='#/case/${encodeURIComponent(CDIR)}/${go[f.where]||"command"}'"><div class="s">${f.status==="demonstrated"?"● demonstrated":"○ not shown"}</div><div class="t">${esc(f.requirement)}</div><div class="e">${esc(f.evidence)}</div></div>`).join("")}</div></div>`:""}
  ${sc?`<div class="card"><div class="hd"><h3>AI measured against human labels</h3><span class="tiny mut">MEVA activity annotations</span></div><div class="grid g4"><div><div class="verdict" style="background:none;color:var(--ink)"><div style="font:650 30px var(--disp);color:var(--lead)">${pct(sc.recall)}</div></div><div class="tiny mut">recall · ${sc.hits}/${sc.scorable} scorable labels</div></div>
   <div><div style="font:650 30px var(--disp)">${pct(sc.precision_lower_bound)}</div><div class="tiny mut">precision lower bound</div></div><div><div style="font:650 30px var(--disp);color:var(--crit)">${sc.destroyed}</div><div class="tiny mut">labels in destroyed footage</div></div><div><div style="font:650 30px var(--disp);color:var(--dim)">${sc.not_modelled}</div><div class="tiny mut">activities not modelled</div></div></div>
   <details style="margin-top:8px"><summary>every label and its result</summary><table style="margin-top:6px"><tr><th>Camera</th><th>Labelled activity</th><th>Time</th><th>Result</th></tr>${sc.labels.map(l=>`<tr><td>${esc(l.camera)}</td><td>${esc(l.activity)}</td><td class="mono">${hms(l.from_ms)}–${hms(l.to_ms)}</td><td>${l.status==="hit"?`<span class="chip c-ok">hit ${esc((l.matched_events||[]).slice(0,3).join(","))}</span>`:l.status==="missed"?`<span class="chip c-warn">missed</span>`:`<span class="chip c-n">${esc(l.status)}</span>`}</td></tr>`).join("")}</table><div class="tiny mut" style="margin-top:6px">${esc(sc.method)}</div></details></div>`:""}`;
@@ -710,7 +710,7 @@ function tVideo(c,F){const clips=c.clips.filter(k=>k.mp4_file&&k.start_ms!=null)
  if(window._seekTo){set(window._seekTo);window._seekTo=null}else{const first=acts[0];set(first?first.from_ms:t0)}}
 
 // ======================================================================= Person search · Redacted copy · Evidence package
-async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`;
+async function tPersonSearch(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`;
  $("#tabc").innerHTML=`<div class="card"><div class="row"><h2 style="margin:0">Person search</h2><span class="mut">find a person across every camera of every item</span><span class="sp"></span><span class="chip" style="background:var(--warn-bg);color:var(--warn)">ranked leads · not identification</span></div>
  <div class="mut" style="margin-top:6px;font-size:12.5px">Pick a person. Tracker breaks are joined first (same camera, same spot, same clothes), so each person appears once. Every other person is then ranked by clothing colour judged against the rest of the case and, where both crops hold the person's own face, by face similarity. Colour alone is never more than a possible lead. People on the same camera at the same time are excluded (one person cannot be in two places).</div>
  <div id="av-pick" class="av-grid" style="margin-top:12px"><div class="mut">Loading…</div></div></div>
@@ -718,7 +718,7 @@ async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`
  <div class="grid g2"><div class="card" id="av-red"><h3 style="margin:0 0 6px">Redacted copy</h3><div class="mut" style="font-size:12.5px">Choose a subject above, then blur everyone else in one of their clips. The original clip is never changed.</div><div id="av-redl" style="margin-top:10px"></div></div>
  <div class="card" id="av-pot"><div class="row"><h3 style="margin:0">Sealed evidence package</h3><span class="sp"></span><button class="btn pri" id="av-seal">${ico("lock")}Seal package</button></div>
  <div class="mut" style="font-size:12.5px;margin-top:6px">One zip to hand over: report, case data, custody ledgers, clips, capsule, examiner work and redactions, with a SHA-256 manifest signed by the examiner key. Its hash is written to the custody ledger.</div><div id="av-potl" style="margin-top:10px"></div></div></div>`;
- const D=await api(base+"/anveshan");
+ const D=await api(base+"/person_search");
  if(D.error){$("#av-pick").innerHTML=`<div class="mut">${esc(D.error)}</div>`;return}
  const lists=d=>{
   $("#av-potl").innerHTML=(d.packages||[]).slice().reverse().map(p=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><b>${esc(p.file.split("/").pop())}</b><span class="sp"></span><a class="btn" href="${F(p.file)}" download>${ico("disk")}Download ${size(p.bytes)}</a></div>
@@ -730,7 +730,7 @@ async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`
  $("#av-pick").innerHTML=D.candidates.map(t=>`<div class="av-t" data-t="${esc(t.track)}" data-m="${esc((t.members||[t.track]).join(" "))}"><img src="${F(t.crop)}" loading="lazy"><div class="c"><b>${esc(t.camera.split(" · ").pop())}</b><br>${hms(t.from_ms)}–${hms(t.to_ms)}<br>${esc(t.colours)}${t.face?" · face":""}${t.tracks>1?` · ×${t.tracks} tracks`:""}</div></div>`).join("")||`<div class="mut">No person tracks in this case.</div>`;
  $$("#av-pick .av-t").forEach(e=>e.onclick=async()=>{$$("#av-pick .av-t").forEach(x=>x.classList.toggle("on",x===e));e.scrollIntoView({block:"nearest",inline:"center"});
   $("#av-res").innerHTML=`<div class="card mut">Comparing against every person track…</div>`;
-  const R=await api(base+"/anveshan/"+encodeURIComponent(e.dataset.t));if(R.error){$("#av-res").innerHTML=`<div class="card" style="color:var(--crit)">${esc(R.error)}</div>`;return}
+  const R=await api(base+"/person_search/"+encodeURIComponent(e.dataset.t));if(R.error){$("#av-res").innerHTML=`<div class="card" style="color:var(--crit)">${esc(R.error)}</div>`;return}
   const q=R.query,cams=[...new Set([q.camera,...R.results.map(r=>r.camera)])];
   const spans=R.results.flatMap(r=>r.person_tracks||[r]);
   const t0=Math.min(q.from_ms,...spans.map(r=>r.from_ms)),t1=Math.max(q.to_ms,...spans.map(r=>r.to_ms)),X=t=>((t-t0)/Math.max(1,t1-t0)*100).toFixed(2);
@@ -757,11 +757,11 @@ async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`
    <button class="btn pri" id="av-go">${ico("eye")}Redact all but this person</button></div><div id="av-msg" class="mut" style="font-size:12px"></div>`);
   $("#av-go").onclick=async()=>{const b=$("#av-go");b.disabled=true;$("#av-msg").textContent="Rendering the redacted copy (about 20 s per minute of video)…";
    const r=await api(base+"/redact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clip:$("#av-clip").value,keep:q.members.map(m=>m.track),examiner:localStorage.exm||c.case.examiner,purpose:"disclosure copy"})});
-   b.disabled=false;if(r.error){$("#av-msg").textContent=r.error;return}$("#av-msg").textContent=`${r.id} written · logged to custody`;lists(await api(base+"/anveshan"))}});
+   b.disabled=false;if(r.error){$("#av-msg").textContent=r.error;return}$("#av-msg").textContent=`${r.id} written · logged to custody`;lists(await api(base+"/person_search"))}});
  const pre=decodeURIComponent(location.hash.split("/")[4]||"");if(pre){const el=[...$$("#av-pick .av-t")].find(x=>x.dataset.m.split(" ").includes(pre));if(el)el.click()}
  $("#av-seal").onclick=async()=>{const b=$("#av-seal");b.disabled=true;b.textContent="Sealing…";
-  const r=await api(base+"/potli",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({examiner:localStorage.exm||c.case.examiner})});
-  b.disabled=false;b.innerHTML=`${ico("lock")}Seal package`;if(r.error){alert(r.error);return}lists(await api(base+"/anveshan"))}}
+  const r=await api(base+"/package",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({examiner:localStorage.exm||c.case.examiner})});
+  b.disabled=false;b.innerHTML=`${ico("lock")}Seal package`;if(r.error){alert(r.error);return}lists(await api(base+"/person_search"))}}
 
 function jump(ms){window._seekTo=ms;location.hash=`#/case/${encodeURIComponent(CDIR)}/video`}
 
@@ -889,7 +889,7 @@ function tTime(c){const cams=[...new Map(c.clips.filter(k=>k.start_ms&&k.raw_fil
  const acts=(((c.ai.layers||{}).L4||{}).activities||[]).filter(a=>c.byClip[a.clip]&&c.byClip[a.clip].evidence!=="E3");
  const camList=[...new Set(acts.map(a=>a.camera))];
  $("#tabc").innerHTML=`<div class="col" style="gap:4px"><h2>Clock analysis <span class="mut" style="font-weight:500;font-size:15px">· clocks, corrections, robustness</span></h2><p class="note">The on-screen clock is never trusted as truth. Each line is overlay time minus recorder time: a step is a clock change, a flat offset is drift. Every event in this case uses the recorder clock.</p></div>
- <div class="card" id="kaal"></div><div class="card"><div class="hd"><h3>Camera clocks against the recorder clock</h3></div><div id="tc"></div></div>
+ <div class="card" id="clockfix"></div><div class="card"><div class="hd"><h3>Camera clocks against the recorder clock</h3></div><div id="tc"></div></div>
  ${acts.length?`<div class="card"><div class="hd"><h3>Timeline robustness</h3><span class="tiny mut">how wrong would one camera's clock have to be to reverse the order of events?</span></div>
  <div class="grid" style="grid-template-columns:minmax(260px,1fr) minmax(0,2fr);align-items:start">
   <div class="col"><label class="lb" style="margin:0">Camera to shift</label><select id="rcam">${camList.map(x=>`<option>${esc(x)}</option>`).join("")}</select>
@@ -909,7 +909,7 @@ function tTime(c){const cams=[...new Map(c.clips.filter(k=>k.start_ms&&k.raw_fil
   series.forEach(s=>{s.col=colorOf(s.k.camera);svg.append("path").attr("d",d3.line().curve(d3.curveStepAfter).x(p=>x(p[0])).y(p=>y(p[1]))(s.pts)).attr("fill","none").attr("stroke",s.col).attr("stroke-width",2.4)});
   const labs=series.map(s=>({s,y:y(s.pts[s.pts.length-1][1])+4})).sort((a,b)=>a.y-b.y);for(let i=1;i<labs.length;i++)labs[i].y=Math.max(labs[i].y,labs[i-1].y+13);
   for(const l of labs){const v=l.s.pts[l.s.pts.length-1][1];svg.append("text").attr("x",W-m.r+8).attr("y",l.y).text(`${l.s.k.device} · ${l.s.k.camera}: ${v>0?"+":""}${v} s`).style("fill",l.s.col).style("font-weight",600)}}
- if(acts.length)robust(c,acts);kaalshodhanCard(c)}
+ if(acts.length)robust(c,acts);clockCorrectionCard(c)}
 function robust(c,acts){const pairs=[];const A=acts.map(a=>({cam:a.camera,t:a.from_ms+1000,id:a.id}));
  for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){if(A[i].cam===A[j].cam)continue;const d=A[j].t-A[i].t;if(Math.abs(d)<=300000&&d!==0)pairs.push([A[i],A[j]])}
  const drift={};for(const k of c.clips)if(k.drift_s!=null)drift[k.label]=k.drift_s;
@@ -1110,11 +1110,11 @@ async function livePage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Liv
   if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
 
 // ================================================================ Recorder validation: real-recorder validation
-async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Recorder validation</b>`);const runs=await api("/api/kasauti").catch(()=>[]);
- $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Recorder validation <span class="mut" style="font-weight:500;font-size:18px">· the touchstone</span></h1>
+async function recorderValidationPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Recorder validation</b>`);const runs=await api("/api/recorder_validation").catch(()=>[]);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Recorder validation <span class="mut" style="font-weight:500;font-size:18px">· score against a real recorder</span></h1>
  <p class="note">Modelled images prove the method; only a real recorder proves the tool. Record on a real DVR while writing down what happens, image its disk, and let Recorder validation score what Sarvadristhi recovers against your log. A passing physical run promotes that format to “real disk” in Capability matrix.</p></div>
  <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start">
- <div class="card"><div class="hd"><h3>Protocol</h3><span class="sp"></span><a class="btn sm" href="/api/kasauti/template.csv">${ico("doc")}Event-log template</a></div>
+ <div class="card"><div class="hd"><h3>Protocol</h3><span class="sp"></span><a class="btn sm" href="/api/recorder_validation/template.csv">${ico("doc")}Event-log template</a></div>
   <ol class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;color:var(--ink2)">
   <li>Note make, model, serial and firmware from the recorder's menu.</li><li>Compare the recorder clock with a reference (phone on NTP); write down the offset.</li>
   <li>Record on two or more cameras; write each start and end time, and anything that happens in view.</li><li>Delete a recording from the menu, or format the disk; write the time.</li>
@@ -1129,14 +1129,14 @@ async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>
   <div id="kerr" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div><div class="row" style="margin-top:14px"><button class="btn pri" id="kgo">${ico("touch")}Run Recorder validation</button></div></div></div>
  <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Runs</h3><span class="tiny mut">${runs.length} on this workstation</span></div>${runs.length?`<div class="tblwrap"><table><tr><th>When</th><th>Device</th><th>Kind</th><th>Detected family</th><th>Mean coverage</th><th>Logged events detected</th></tr>
   ${runs.map(r=>`<tr><td class="mono tiny">${esc(r.utc)}</td><td>${esc([r.device.make,r.device.model,r.device.serial].filter(Boolean).join(" ")||"—")}</td><td>${r.physical_recorder?`<span class="chip c-ink">physical recorder</span>`:`<span class="chip c-n">rehearsal</span>`}</td><td>${esc(r.family)} · ${r.confidence}</td><td class="num">${r.mean_coverage==null?"—":pct(r.mean_coverage)}</td><td>${esc(r.events_detected)}</td></tr>`).join("")}</table></div>`:`<div class="empty">No runs yet. Rehearse on a modelled disk to see the report, then run it on a real recorder.</div>`}</div>`;
- $("#kreh").onclick=async()=>{const r=await api("/api/kasauti/rehearsal",{method:"POST",body:"{}"});if(r.error){toast(r.error);return}$("#kimg").value=r.image;$("#kev").value=r.events;$("#kmake").value="Pramanshala (modelled)";$("#kmodel").value=r.model;$("#kphys").checked=false;toast("Rehearsal log written from ground truth")};
+ $("#kreh").onclick=async()=>{const r=await api("/api/recorder_validation/rehearsal",{method:"POST",body:"{}"});if(r.error){toast(r.error);return}$("#kimg").value=r.image;$("#kev").value=r.events;$("#kmake").value="Evidence builder (modelled)";$("#kmodel").value=r.model;$("#kphys").checked=false;toast("Rehearsal log written from ground truth")};
  $("#kgo").onclick=async()=>{const e=$("#kerr");e.style.display="none";const exm=$("#kexm").value.trim();if(!exm){e.style.display="flex";e.textContent="Enter the examiner's name.";return}localStorage.exm=exm;
-  const body={kind:"kasauti",case_id:"KASAUTI-"+new Date().toISOString().slice(5,19).replace(/[-T:]/g,""),examiner:exm,
-   kasauti:{image:$("#kimg").value,events:$("#kev").value,physical:$("#kphys").checked,recorder_offset_s:+$("#koff").value||0,device:{make:$("#kmake").value,model:$("#kmodel").value,serial:$("#kser").value,firmware:$("#kfw").value}}};
+  const body={kind:"recorder_validation",case_id:"RECVAL-"+new Date().toISOString().slice(5,19).replace(/[-T:]/g,""),examiner:exm,
+   recorder_validation:{image:$("#kimg").value,events:$("#kev").value,physical:$("#kphys").checked,recorder_offset_s:+$("#koff").value||0,device:{make:$("#kmake").value,model:$("#kmodel").value,serial:$("#kser").value,firmware:$("#kfw").value}}};
   const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
 
 // ================================================================ Standards: standards
-async function maryadaPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Standards</b>`);const m=await api("/api/standards");
+async function standardsPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Standards</b>`);const m=await api("/api/standards");
  const st=s=>s.startsWith("supported")&&!s.includes("only")?"c-ok":s.startsWith("supported")?"c-info":s.includes("ready")||s.includes("data sheet")?"c-warn":"c-n";
  $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Standards <span class="mut" style="font-weight:500;font-size:18px">· the standards it answers to</span></h1><p class="note">${esc(m.note)}</p></div>
  ${m.standards.map(s=>`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>${esc(s.id)}</h3><span class="tiny mut">${esc(s.title)}</span></div><div class="tblwrap"><table><tr><th>Area</th><th>What it asks</th><th>How Sarvadristhi answers</th><th>Where</th><th>Status</th></tr>
@@ -1157,15 +1157,15 @@ function bindExaminerTools(c){if(!$("#slgo"))return;const exm=()=>localStorage.e
   if(r.error){$("#slmsg").textContent=r.error;return}$("#sltext").value="";$("#slmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id} recorded at ${s.toFixed(1)} s and logged to custody</span>`;toast(`Examiner findings ${r.id} recorded`)};
  $("#kmgo").onclick=async()=>{const id=$("#slclip").value,s=at(id);$("#kmmsg").textContent="Cutting…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/segment`,{method:"POST",body:JSON.stringify({clip:id,from_s:Math.max(0,s-(+$("#kmb").value||5)),to_s:s+(+$("#kma").value||5),purpose:$("#kmp").value,examiner:exm()})});
   if(r.error){$("#kmmsg").textContent=r.error;return}$("#kmmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id}: ${r.frames} frames, sha256 ${r.sha256.slice(0,12)}…</span> <a href="${window.F(r.file)}" target="_blank">open</a>`;toast(`Segment export ${r.id} exported`)}}
-async function kaalshodhanCard(c){const box=$("#kaal");if(!box)return;const o=await api(`/api/case/${encodeURIComponent(CDIR)}/offsets`);const cur=o.current||{};
+async function clockCorrectionCard(c){const box=$("#clockfix");if(!box)return;const o=await api(`/api/case/${encodeURIComponent(CDIR)}/offsets`);const cur=o.current||{};
  box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("clock")}</span></span><div><h3>Clock correction</h3><div class="tiny mut">recorder clock against a reference, set by the examiner; recorder times are never rewritten</div></div></div>
  <div class="tblwrap"><table><tr><th>Item</th><th>Current offset</th><th>Basis</th><th>Real-world time of first clip</th><th>Set offset</th></tr>
  ${c.evidence_items.map(e=>{const r=cur[e.id],k=c.clips.find(x=>x.evidence===e.id&&x.start_ms);return `<tr><td><b>${esc(e.id)}</b> · ${esc(e.name)}</td><td class="num">${r?(r.offset_s>0?"+":"")+r.offset_s+" s":"none"}</td><td class="small">${r?esc(r.reason):"—"}</td>
   <td class="mono tiny">${k?`recorder ${hms(k.start_ms)}${r?` → real ${hms(k.start_ms+r.offset_s*1000)}`:""}`:"—"}</td>
-  <td><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ko_${e.id}" type="number" step="0.1" placeholder="s" style="width:80px"><input id="kr_${e.id}" placeholder="basis (e.g. vs NTP phone at seizure)" style="min-width:200px"><button class="btn sm" onclick="setKaal('${e.id}')">Save</button></div></td></tr>`}).join("")}</table></div>
+  <td><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ko_${e.id}" type="number" step="0.1" placeholder="s" style="width:80px"><input id="kr_${e.id}" placeholder="basis (e.g. vs NTP phone at seizure)" style="min-width:200px"><button class="btn sm" onclick="setClockOffset('${e.id}')">Save</button></div></td></tr>`}).join("")}</table></div>
  ${o.history.length?`<details style="margin-top:8px"><summary>history (${o.history.length})</summary>${o.history.map(h=>`<div class="tiny">${esc(h.utc)} · ${esc(h.evidence)} ${h.offset_s>0?"+":""}${h.offset_s} s · ${esc(h.reason)} · ${esc(h.examiner)}</div>`).join("")}</details>`:""}`}
-async function setKaal(eid){const r=await api(`/api/case/${encodeURIComponent(CDIR)}/offset`,{method:"POST",body:JSON.stringify({evidence:eid,offset_s:+$("#ko_"+eid).value,reason:$("#kr_"+eid).value,examiner:localStorage.exm||CASE.case.examiner})});
- if(r.error){toast(r.error);return}toast(`Clock correction: ${eid} ${r.offset_s>0?"+":""}${r.offset_s} s logged to custody`);kaalshodhanCard(CASE)}
+async function setClockOffset(eid){const r=await api(`/api/case/${encodeURIComponent(CDIR)}/offset`,{method:"POST",body:JSON.stringify({evidence:eid,offset_s:+$("#ko_"+eid).value,reason:$("#kr_"+eid).value,examiner:localStorage.exm||CASE.case.examiner})});
+ if(r.error){toast(r.error);return}toast(`Clock correction: ${eid} ${r.offset_s>0?"+":""}${r.offset_s} s logged to custody`);clockCorrectionCard(CASE)}
 async function examinerLists(c){const box=$("#exlists");if(!box)return;const [N,S]=await Promise.all([api(`/api/case/${encodeURIComponent(CDIR)}/notes`),api(`/api/case/${encodeURIComponent(CDIR)}/segments`)]);const F=window.F;
  box.innerHTML=`<div class="card"><div class="hd"><h3>Examiner findings</h3><span class="tiny mut">${N.length} examiner finding(s) · go to Timeline &amp; video to add one</span></div>${N.length?`<div class="cites">${N.map(n=>`<div class="cite" onclick="jump(${n.recorder_from_ms||0})">${n.frame?`<img src="${F(n.frame)}">`:""}<div class="c"><b>${esc(n.id)} · ${esc(n.text)}</b><span class="mono">${n.recorder_from_ms?hmsms(n.recorder_from_ms):n.from_s+" s"}</span><span class="mut">${esc(n.camera||"")}</span><span class="dim">${esc(n.examiner)} · ${esc(n.utc)}</span></div></div>`).join("")}</div>`:`<div class="mut small">None yet.</div>`}</div>
  <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Segment export</h3><span class="tiny mut">${S.length} exported segment(s)</span></div>${S.length?`<div class="tblwrap"><table><tr><th>ID</th><th>Camera</th><th>Interval</th><th>Frames</th><th>Purpose</th><th>SHA-256</th><th></th></tr>${S.map(s=>`<tr><td class="mono">${s.id}</td><td class="small">${esc(s.camera||"")}</td><td class="num">${s.asked_from_s.toFixed(1)}–${s.asked_to_s.toFixed(1)} s</td><td class="num">${s.frames}</td><td class="small">${esc(s.purpose)}</td><td class="mono tiny">${s.sha256.slice(0,24)}…</td><td><a class="btn sm" href="${F(s.file)}" target="_blank">Open</a></td></tr>`).join("")}</table></div>`:`<div class="empty">None yet.</div>`}</div>`}

@@ -7,7 +7,7 @@ Not modelled: GPT, the Partition 1 Header, Video Block List, Video Channel List 
 areas, and the video region's real start at 0x80000000 (placed at 1 MiB to keep test images small).
 Recovery must therefore work from the records alone, as it must on a formatted disk.
 
-    python -m pramanshala.honeywell OUT_DIR [--seconds 60] [--codec h264|hevc]"""
+    python -m evidence_builder.honeywell OUT_DIR [--seconds 60] [--codec h264|hevc]"""
 import argparse
 import struct
 from datetime import datetime
@@ -97,7 +97,7 @@ def build(out_dir: Path, seconds: int = 60, fps: int = 10, width: int = 640, hei
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(prog="python -m pramanshala.honeywell")
+    ap = argparse.ArgumentParser(prog="python -m evidence_builder.honeywell")
     ap.add_argument("out", type=Path)
     ap.add_argument("--seconds", type=int, default=60)
     ap.add_argument("--codec", choices=["h264", "hevc"], default="h264")

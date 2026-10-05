@@ -1,6 +1,6 @@
 # Contributor guide: download, run, and change Sarvadristhi
 
-Welcome to **ProjectR** (Sarvadristhi, our SIH26150 DVR/NVR forensic workbench). By the end of this guide you will
+Welcome to **ProjectR** (Sarvadristhi, our DVR/NVR forensic workbench). By the end of this guide you will
 have the code and all demo data on your Windows PC, the workbench running in your browser, and a working
 way to make and submit changes.
 
@@ -60,7 +60,7 @@ gh repo clone aditya36900/ProjectR
 cd ProjectR
 ```
 
-You now have `C:\Work\ProjectR` with folders `sarvadristhi\` (the tool), `pramanshala\` (test-evidence builder),
+You now have `C:\Work\ProjectR` with folders `sarvadristhi\` (the tool), `evidence_builder\` (test-evidence builder),
 `tests\`, `docs\` and `scripts\`.
 
 ## Step 3 — Run the setup (once)
@@ -124,7 +124,7 @@ tracker and the live log show progress; open the case when it says done.
 
 | Tab | What to look at |
 |---|---|
-| Command | Flag board of SIH26150 requirements, planted-vs-caught scorecard, evidence cards, verified AI summary, AI accuracy against human labels |
+| Command | Flag board of requirements, planted-vs-caught scorecard, evidence cards, verified AI summary, AI accuracy against human labels |
 | Timeline & video | Every camera on one recorder clock; press Play for the synchronised video wall with AI boxes; click the timeline to jump |
 | Disk & hex | Where each kind of data sits on each disk image; click a cell to read the original bytes |
 | Provenance | USB exports matched frame-by-frame to the DVR: "only surviving copy" and "6.0 s removed" |
@@ -143,7 +143,7 @@ cd C:\Work\ProjectR
 .venv\Scripts\python.exe -m pytest -q
 ```
 
-Expected after about 6 minutes: **`37 passed, 1 skipped`** (the skipped test needs Linux-only E01 tools).
+Expected after about 8 minutes: **`43 passed, 1 skipped`** (the skipped test needs Linux-only E01 tools).
 If pytest reports `PermissionError` on `AppData\Local\Temp\pytest-of-<you>`, add `--basetemp C:\Work\pytest-tmp`.
 Anything else means your setup differs; see Troubleshooting.
 
@@ -160,7 +160,7 @@ If you received `ProjectR_full.zip` instead: unzip it to `C:\Work`, read `START_
    and `dist\` are in `.gitignore`; keep it that way. Data changes go to the release (see below).
 2. **Never weaken a test or a threshold to make it pass.** If a test fails, find out why; if you think a
    result is a real bug, raise it with the team.
-3. **Run the test suite before every push** (`pytest -q` → 37 passed, 1 skipped).
+3. **Run the test suite before every push** (`pytest -q` → 43 passed, 1 skipped).
 4. **Keep claims honest.** Anything synthetic is labelled synthetic; AI output stays a lead until an
    examiner accepts it.
 5. Work on a branch and open a pull request; do not push straight to `main`.
@@ -172,7 +172,7 @@ cd C:\Work\ProjectR
 git checkout main; git pull                    # start from the latest code
 git checkout -b feature/h265-carver            # one branch per piece of work
 # ... edit, then:
-.venv\Scripts\python.exe -m pytest -q          # must stay green (37 passed, 1 skipped)
+.venv\Scripts\python.exe -m pytest -q          # must stay green (43 passed, 1 skipped)
 git add -A; git status                         # check: no data files listed
 git commit -m "Carve H.265 access units in the universal sweep"
 git push -u origin feature/h265-carver
@@ -196,7 +196,7 @@ the commit (`git restore --staged <file>`).
 | `sarvadristhi\report\` | HTML/PDF report template (BSA s.63(4) data sheet) |
 | `sarvadristhi\ui.py`, `ui_static\app.html` | The workbench server and single-page UI (D3 bundled for offline use) |
 | `sarvadristhi\jobrun.py` | Runs each analysis as its own process (the UI stays responsive) |
-| `pramanshala\` | Builds test evidence: synthetic kit, MEVA scenario, virtual NTFS USB disks |
+| `evidence_builder\` | Builds test evidence: synthetic kit, MEVA scenario, virtual NTFS USB disks |
 | `scripts\` | Setup, demo launcher, data rebuild, data packaging/verification, zip bundle |
 | `tests\test_dvrf.py` | The test suite |
 
@@ -208,7 +208,7 @@ Background reading: `docs\EXECUTION_REPORT.md` (what is done and its limits), `d
 ```powershell
 .venv\Scripts\python.exe -m sarvadristhi analyze kit\images\hikvision_overwritten.img --case cases\T-1 --case-id T-1 --examiner "Me"
 .venv\Scripts\python.exe -m sarvadristhi verify-custody cases\T-1
-.venv\Scripts\python.exe -m pramanshala C:\Temp\kit             # rebuild synthetic evidence (byte-identical every time)
+.venv\Scripts\python.exe -m evidence_builder C:\Temp\kit             # rebuild synthetic evidence (byte-identical every time)
 .venv\Scripts\python.exe scripts\data_tool.py verify          # check demo data against the manifest
 powershell -ExecutionPolicy Bypass -File scripts\build_data.ps1   # rebuild ALL data, incl. virtual USB disks (UAC prompts)
 ```

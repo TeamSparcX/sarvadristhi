@@ -317,7 +317,7 @@ def build(out_dir: Path, seconds: int = 180, fps: int = 10, width: int = 640, he
     (out_dir / "SHA256SUMS").write_text("\n".join(hashes) + "\n")
 
     manifest = {
-        "kit": "dvr-pramanshala", "kit_version": __version__,
+        "kit": "evidence_builder", "kit_version": __version__,
         "built_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "host": platform.platform(), "ffmpeg": _ffmpeg_version(),
         "nature": "SYNTHETIC CONTENT in vendor-exact containers. Not real evidence.",
@@ -348,7 +348,7 @@ def build(out_dir: Path, seconds: int = 180, fps: int = 10, width: int = 640, he
             "emulated_not_verified": [
                 "DHAV header checksum byte (FFmpeg ignores it)",
                 "Hikvision fields the reference parser marks unknown are zero",
-                "System log description strings are pramanshala-authored",
+                "System log description strings are evidence_builder-authored",
                 "Behaviour of a real format (index reset, video kept, logs kept) is an assumption"],
             "not_emulated": ["Dahua DHFS filesystem metadata", "Hikvision 'IMKH' stream header",
                              "Hikvision SQLite recording database", "Audio"]},

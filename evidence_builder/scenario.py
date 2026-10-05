@@ -15,7 +15,7 @@ the tool's findings can be checked against what was planted:
          - export of CH3 EDITED: the 4 s showing the door entry were cut out
          - export of CH4 DISGUISED as maintenance_log.txt
 
-    python -m pramanshala.scenario kit/meva kit/scenario"""
+    python -m evidence_builder.scenario kit/meva kit/scenario"""
 import hashlib
 import json
 import subprocess
@@ -49,7 +49,7 @@ def epoch(hms: str) -> int:
 def meva_file(src: Path, cam: str) -> Path:
     hits = sorted(src.glob(f"{DATE}.*.{cam}.r13.avi"))
     if not hits:
-        raise SystemExit(f"missing MEVA clip for {cam} in {src} (run python -m pramanshala.fetch_meva)")
+        raise SystemExit(f"missing MEVA clip for {cam} in {src} (run python -m evidence_builder.fetch_meva)")
     return hits[0]
 
 
@@ -221,7 +221,7 @@ def build(src_dir: Path, out: Path) -> dict:
                       "channels": [{"channel": c.cam.channel, "label": c.cam.label, "source": c.source,
                                     "true_start_utc": datetime.fromtimestamp(c.start_epoch, UTC).isoformat(),
                                     "drift_s": c.cam.drift_s} for c in b]},
-            "USB": {"image": "usb.vhd (built by pramanshala/make_scenario_usb.ps1)",
+            "USB": {"image": "usb.vhd (built by evidence_builder/make_scenario_usb.ps1)",
                     "files": {p.name: _sha(p) for p in sorted(usb.iterdir())}, "delete": [exp1.name]}},
         "poisons": poisons,
         "labels": "MEVA activity labels: kit/meva/*.activities.yml (frame numbers at 30 fps from each file start)",

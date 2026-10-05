@@ -3,7 +3,7 @@
 Parallel HTTP range requests against the public AWS bucket (no account needed). Each file is
 verified against the bucket's Content-Length; the S3 ETag is recorded for provenance.
 
-    python -m pramanshala.fetch_meva kit/meva"""
+    python -m evidence_builder.fetch_meva kit/meva"""
 import concurrent.futures as cf
 import json
 import sys
