@@ -21,6 +21,31 @@
  --disp:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
  --mono:"Cascadia Mono","Cascadia Code",Consolas,ui-monospace,monospace;
  color-scheme:light}
+/* Deep Scan: the dark intelligence theme. Same tokens, same meanings; toggled from the sidebar footer. */
+:root[data-theme="dark"]{
+ --canvas:#05080b;--side:#0a1016;--card:#0d161e;--sunk:#0a1118;--tint:#0f2230;--hover:#112130;
+ --ink:#e8f6ff;--ink2:#cfe3ee;--mut:#8aa3b3;--dim:#6a8a9d;--line:#16232e;--line2:#22384a;
+ --acc:#34e0ff;--acc-bg:#0e2a33;
+ --ok:#39ff9c;--ok-bg:#0d2a1f;--warn:#ffb02e;--warn-bg:#2a1f0b;--crit:#ff3b5c;--crit-bg:#2e0f16;--info:#34e0ff;--info-bg:#0e2430;--lead:#b48cff;--lead-bg:#1e1530;
+ --idx:#34e0ff;--carv:#ffb02e;--cont:#ff6b8b;--meta:#e8f6ff;--del:#ff3b5c;--live:#6c7d99;--empty:#1b2a35;
+ color-scheme:dark}
+:root[data-theme="dark"] body{background:radial-gradient(1100px 700px at 60% 0%,#0b1720 0,transparent 70%),var(--canvas)}
+:root[data-theme="dark"] .top{background:rgba(5,8,11,.86);border-bottom-color:var(--line2)}
+:root[data-theme="dark"] .banner{color:#ffd28a}
+:root[data-theme="dark"] .btn.pri{background:var(--acc);border-color:var(--acc);color:#04121a}
+:root[data-theme="dark"] .card{box-shadow:0 0 0 1px rgba(52,224,255,.05)}
+:root[data-theme="dark"] .card:before{content:"";position:absolute}
+:root[data-theme="dark"] img,:root[data-theme="dark"] video{filter:none}
+.themebtn{margin-top:10px;width:100%;justify-content:center}
+/* Anveshan */
+.av-grid{display:grid;grid-auto-flow:column;grid-auto-columns:118px;gap:10px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}.av-grid .av-t{scroll-snap-align:start}
+.av-t{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk);cursor:pointer;transition:border-color .15s}
+.av-t:hover,.av-t.on{border-color:var(--acc)}.av-t img{width:100%;height:118px;object-fit:cover;display:block;background:#000}
+.av-t .c{padding:6px 8px;font-size:11px;line-height:1.35}
+.av-r{display:grid;grid-template-columns:86px 1fr 230px;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+.av-r img{width:86px;height:96px;object-fit:cover;border-radius:8px;background:#000;cursor:pointer}
+.av-bar{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}.av-bar i{display:block;height:100%;background:var(--acc)}
+.av-f{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;font-size:11.5px;margin:2px 0}
 *{box-sizing:border-box}html,body{height:100%}
 body{margin:0;background:var(--canvas);color:var(--ink);font:13.5px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
 a{color:inherit}button{font:inherit;color:inherit}
@@ -288,6 +313,10 @@ const PROV={"index":["#1f9d61","index-confirmed"],"carved":["#d98a0b","carved fr
 const LVL={"index-confirmed":"#1f9d61","carved + timestamp":"#d98a0b","content-only":"#d4467b"};
 let CASE=null,CDIR=null,SEL=null;
 async function api(p,o){const r=await fetch(p,o);return r.json()}
+(function(){let t=null;try{t=localStorage.getItem("theme")}catch(e){}const q=new URLSearchParams(location.search).get("theme");if(q==="dark"||q==="light")t=q;if(t)document.documentElement.dataset.theme=t})();
+function toggleTheme(){const d=document.documentElement;d.dataset.theme=d.dataset.theme==="dark"?"light":"dark";
+ try{localStorage.setItem("theme",d.dataset.theme)}catch(e){}if(window.CASE&&CDIR)casePage(CDIR,location.hash.split("/")[3]||"command");else route()}
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 
 // ---------------------------------------------------------------- icons (1.6px strokes, currentColor)
@@ -368,7 +397,7 @@ function sideHTML(){const c=CASE,d=CDIR;const tab=(location.hash.split("/")[3]||
   h+=`<div class="navh">Case · ${esc(c.case.case_id)}</div><nav class="nav">${TABS.map(([k,t,ic,sub])=>navItem(`#/case/${encodeURIComponent(d)}/${k}`,ic,t,sub,cur.startsWith("#/case/")&&tab===k,
    (k==="command"&&crit?`<span class="cnt">${crit}</span>`:"")+(k==="review"&&leads?`<span class="cnt ${rev>=leads?"ok":"n"}">${rev}/${leads}</span>`:""))).join("")}</nav>
    <button class="btn mint" style="justify-content:center" onclick="present()">${ico("play")}Nyaydarshika · present</button>`}
- h+=`<div class="sidefoot"><div>Runs on<b>127.0.0.1 · offline</b></div><div>Evidence<b>opened read-only</b></div><div>Build<b>Sarvadristhi ${esc((BOOT&&BOOT.version)||"")}</b></div></div>`;
+ h+=`<div class="sidefoot"><div>Runs on<b>127.0.0.1 · offline</b></div><div>Evidence<b>opened read-only</b></div><div>Build<b>Sarvadristhi ${esc((BOOT&&BOOT.version)||"")}</b></div><button class="btn themebtn" onclick="toggleTheme()">${document.documentElement.dataset.theme==="dark"?"☀ Light theme":"◐ Deep Scan theme"}</button></div>`;
  $("#side").innerHTML=h}
 function topHTML(crumbs,right=""){$("#top").innerHTML=`<div class="crumb">${crumbs}</div><span class="sp"></span>${right}`}
 
@@ -507,7 +536,7 @@ function norm(c){
 const TABS=[["command","Drishtipeeth","grid","case overview"],["video","Timeline & video","film","all cameras, one clock"],["xray","Kanikadarpan","xray","frame-to-byte X-ray"],
  ["hypotheses","Roopnirnay","layers","format hypotheses"],["disk","Disk & hex","disk","what was found where"],["reconcile","Ekmatpatra","matrix","where sources agree"],
  ["provenance","Provenance","prov","exports vs recorder"],["time","Kaalsthirta","clock","clocks, offsets, robustness"],["ask","Saakshyaprashna","ask","ask the evidence"],
- ["ai","AI reasoning","ai","four layers, inspectable"],["review","Review & report","check","Sakshilekh, Khandmudra"],["custody","Shrinkhalapatra","lock","custody · Punarnirmiti"]];
+ ["ai","AI reasoning","ai","four layers, inspectable"],["anveshan","Anveshan","search","find a person · redact · seal"],["review","Review & report","check","Sakshilekh, Khandmudra"],["custody","Shrinkhalapatra","lock","custody · Punarnirmiti"]];
 async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<div class="card empty">Loading case…</div>`;CASE=norm(await api("/api/case/"+encodeURIComponent(dir)));CDIR=dir;SEL=null}
  const c=CASE,F=p=>`/case/${encodeURIComponent(dir)}/file/${p}`;window.F=F;sideHTML();
  const po=c.poison_scorecard||[];
@@ -517,7 +546,7 @@ async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<di
    <button class="btn" onclick="openInsp()">${ico("eye")}Proof</button><button class="btn" onclick="present()">${ico("play")}Present</button><a class="btn pri" href="#/case/${encodeURIComponent(dir)}/custody">${ico("replay")}Punarnirmiti</a>`);
  $("#main").innerHTML=`${c.scenario?`<div class="banner">${ico("warn",'width="16" height="16" style="flex:none;margin-top:1px"')}<span><b>Test bench.</b> ${esc(c.scenario.nature)}. Footage: ${esc(c.scenario.footage.dataset)} · ${esc(c.scenario.footage.license)}.</span></div>`:""}
  <div id="tabc" class="col" style="gap:14px"></div>`;
- ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
+ ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,anveshan:tAnveshan,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
  renderInsp()}
 const stillURL=(k,t=3)=>k&&k.mp4_file?`/api/case/${encodeURIComponent(CDIR)}/still/${encodeURIComponent(k.mp4_file)}?t=${t}`:"";
 
@@ -679,6 +708,59 @@ function tVideo(c,F){const clips=c.clips.filter(k=>k.mp4_file&&k.start_ms!=null)
  const loop=now=>{if(!document.getElementById("clk"))return;if(playing){T+=(now-last)*(+$("#rate").value);if(T>=t1){playing=false;$("#play").textContent="Play"}set(T)}last=now;requestAnimationFrame(loop)};requestAnimationFrame(loop);
  window._seekClip=id=>{const k=c.byClip[id];if(k&&k.start_ms)set(k.start_ms+500)};window.seek=set;draw();
  if(window._seekTo){set(window._seekTo);window._seekTo=null}else{const first=acts[0];set(first?first.from_ms:t0)}}
+
+// ======================================================================= Anveshan · Avaran · Saakshyapotli
+async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`;
+ $("#tabc").innerHTML=`<div class="card"><div class="row"><h2 style="margin:0">Anveshan</h2><span class="mut">find a person across every camera of every item</span><span class="sp"></span><span class="chip" style="background:var(--warn-bg);color:var(--warn)">ranked leads · not identification</span></div>
+ <div class="mut" style="margin-top:6px;font-size:12.5px">Pick a person. Every other person track in the case is ranked by clothing-colour signature and, where both crops show a face, by face similarity. Tracks on the same camera at the same time are excluded (one person cannot be in two places).</div>
+ <div id="av-pick" class="av-grid" style="margin-top:12px"><div class="mut">Loading…</div></div></div>
+ <div id="av-res"></div>
+ <div class="grid g2"><div class="card" id="av-red"><h3 style="margin:0 0 6px">Avaran · redacted copy</h3><div class="mut" style="font-size:12.5px">Choose a subject above, then blur everyone else in one of their clips. The original clip is never changed.</div><div id="av-redl" style="margin-top:10px"></div></div>
+ <div class="card" id="av-pot"><div class="row"><h3 style="margin:0">Saakshyapotli · sealed evidence package</h3><span class="sp"></span><button class="btn pri" id="av-seal">${ico("lock")}Seal package</button></div>
+ <div class="mut" style="font-size:12.5px;margin-top:6px">One zip to hand over: report, case data, custody ledgers, clips, capsule, examiner work and redactions, with a SHA-256 manifest signed by the examiner key. Its hash is written to the custody ledger.</div><div id="av-potl" style="margin-top:10px"></div></div></div>`;
+ const D=await api(base+"/anveshan");
+ if(D.error){$("#av-pick").innerHTML=`<div class="mut">${esc(D.error)}</div>`;return}
+ const lists=d=>{
+  $("#av-potl").innerHTML=(d.packages||[]).slice().reverse().map(p=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><b>${esc(p.file.split("/").pop())}</b><span class="sp"></span><a class="btn" href="${F(p.file)}" download>${ico("disk")}Download ${size(p.bytes)}</a></div>
+   <div class="mono" style="font-size:11px;color:var(--mut)">${p.files} files · sha256 ${esc(p.sha256.slice(0,32))}… · key ${esc(p.key_fingerprint)} · ${esc(p.sealed_utc)}</div></div>`).join("")||`<div class="mut" style="font-size:12px">No package sealed yet.</div>`;
+  $("#av-redl").innerHTML=(d.redactions||[]).slice().reverse().map(r=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row"><b>${esc(r.id)}</b><span class="mut">${esc(r.camera||r.clip)}</span><span class="sp"></span><span class="chip" style="background:var(--ok-bg);color:var(--ok)">${r.kept_tracks.length} kept · ${r.blurred_tracks.length} blurred</span></div>
+   <video controls preload="metadata" src="${F(r.file)}" style="width:100%;border-radius:8px;margin-top:6px;background:#000"></video>
+   <div class="mono" style="font-size:11px;color:var(--mut)">sha256 ${esc(r.sha256.slice(0,32))}… · source ${esc(r.source_mp4_sha256.slice(0,16))}… · ${r.frames} frames</div><div style="font-size:11.5px;color:var(--warn)">${esc(r.limits)}</div></div>`).join("")};
+ lists(D);
+ $("#av-pick").innerHTML=D.candidates.map(t=>`<div class="av-t" data-t="${esc(t.track)}"><img src="${F(t.crop)}" loading="lazy"><div class="c"><b>${esc(t.camera.split(" · ").pop())}</b><br>${hms(t.from_ms)}–${hms(t.to_ms)}<br>${esc(t.colours)}${t.face?" · face":""}</div></div>`).join("")||`<div class="mut">No person tracks in this case.</div>`;
+ $$("#av-pick .av-t").forEach(e=>e.onclick=async()=>{$$("#av-pick .av-t").forEach(x=>x.classList.toggle("on",x===e));e.scrollIntoView({block:"nearest",inline:"center"});
+  $("#av-res").innerHTML=`<div class="card mut">Comparing against every person track…</div>`;
+  const R=await api(base+"/anveshan/"+encodeURIComponent(e.dataset.t));if(R.error){$("#av-res").innerHTML=`<div class="card" style="color:var(--crit)">${esc(R.error)}</div>`;return}
+  const q=R.query,cams=[...new Set([q.camera,...R.results.map(r=>r.camera)])];
+  const t0=Math.min(q.from_ms,...R.results.map(r=>r.from_ms)),t1=Math.max(q.to_ms,...R.results.map(r=>r.to_ms)),X=t=>((t-t0)/Math.max(1,t1-t0)*100).toFixed(2);
+  const lane=cam=>`<div class="row" style="flex-wrap:nowrap;gap:8px;margin:3px 0"><span style="width:210px;font-size:11.5px" class="mut">${esc(cam)}</span><div style="position:relative;flex:1;height:14px;background:var(--sunk);border:1px solid var(--line);border-radius:3px">
+   ${q.camera===cam?`<i style="position:absolute;left:${X(q.from_ms)}%;width:${Math.max(.6,X(q.to_ms)-X(q.from_ms))}%;top:1px;bottom:1px;background:var(--crit)" title="subject"></i>`:""}
+   ${R.results.filter(r=>r.camera===cam).map(r=>`<i style="position:absolute;left:${X(r.from_ms)}%;width:${Math.max(.5,X(r.to_ms)-X(r.from_ms))}%;top:1px;bottom:1px;background:var(--acc);opacity:${r.band==="strong lead"?1:r.band==="possible"?.6:.25}" title="${esc(r.track)} ${r.score}"></i>`).join("")}</div></div>`;
+  const clips=[...new Set([e.dataset.t.split("-T")[0],...R.results.filter(r=>r.band!=="weak").map(r=>r.clip)])];
+  $("#av-res").innerHTML=`<div class="card"><div class="row" style="align-items:flex-start;gap:16px;flex-wrap:nowrap"><img src="${F(q.crop)}" style="width:120px;height:150px;object-fit:cover;border-radius:10px;background:#000">
+   <div style="flex:1"><div class="mut" style="font-size:11px;letter-spacing:.12em">SUBJECT</div><div style="font-size:18px;font-weight:700">${esc(q.track)}</div><div class="mut">${esc(q.camera)} · ${hms(q.from_ms)}–${hms(q.to_ms)} · ${esc(q.upper_colour)} / ${esc(q.lower_colour)}${q.face?" · face visible":""}</div>
+   <div style="margin-top:8px;font-size:12.5px">${R.compared} tracks compared · ${R.excluded_same_camera_same_time} excluded (same camera, same time) · leads on ${R.cameras.length} camera(s)</div>
+   <div class="mut" style="font-size:11.5px;margin-top:4px">${esc(R.method)}</div></div></div>
+   <div style="margin-top:12px"><div class="mut" style="font-size:11px;letter-spacing:.12em;margin-bottom:4px">SIGHTINGS ON THE RECORDER CLOCK · red = subject · cyan = leads (opacity = strength)</div>${cams.map(lane).join("")}
+   <div class="row mono" style="font-size:10.5px;color:var(--mut);margin-left:218px"><span>${hms(t0)}</span><span class="sp"></span><span>${hms(t1)}</span></div></div>
+   <div style="margin-top:8px">${R.results.map(r=>`<div class="av-r"><img src="${F(r.crop)}" onclick="jump(${r.best_ms})" title="open at this moment">
+    <div><div class="row"><b>${esc(r.camera)}</b><span class="chip" style="background:${r.band==="strong lead"?"var(--ok-bg)":r.band==="possible"?"var(--warn-bg)":"var(--sunk)"};color:${r.band==="strong lead"?"var(--ok)":r.band==="possible"?"var(--warn)":"var(--mut)"}">${esc(r.band)}</span>${r.same_l4_entity?`<span class="chip" style="background:var(--info-bg);color:var(--info)">also linked by L4</span>`:""}</div>
+    <div class="mono" style="font-size:11.5px;color:var(--mut)">${esc(r.track)} · ${hms(r.from_ms)}–${hms(r.to_ms)}</div>
+    ${r.factors.map(f=>`<div class="av-f"><span class="mut">${esc(f.factor)}</span><span class="av-bar"><i style="width:${f.value==null?0:f.value*100}%"></i></span><span class="mono">${f.value==null?"—":f.value.toFixed(2)}</span></div>`).join("")}
+    <div class="mut" style="font-size:11px">${r.factors.map(f=>esc(f.why)).join(" · ")}</div></div>
+    <div><div class="mut" style="font-size:11px">score</div><div style="font-size:26px;font-weight:700">${(r.score*100).toFixed(0)}</div><div class="av-bar"><i style="width:${r.score*100}%"></i></div>
+    <div class="row" style="margin-top:8px"><button class="btn" onclick="jump(${r.best_ms})">${ico("film")}Watch</button></div></div></div>`).join("")||`<div class="mut">No other person tracks to compare.</div>`}</div>
+   <div class="mut" style="font-size:11.5px;margin-top:8px">${esc(R.disclaimer)}</div></div>`;
+  $("#av-redl").insertAdjacentHTML("afterbegin",`<div class="row" style="margin-bottom:8px"><select id="av-clip" style="max-width:260px">${clips.map(k=>`<option>${esc(k)}</option>`).join("")}</select>
+   <button class="btn pri" id="av-go">${ico("eye")}Redact all but ${esc(q.track.split("-").pop())}</button></div><div id="av-msg" class="mut" style="font-size:12px"></div>`);
+  $("#av-go").onclick=async()=>{const b=$("#av-go");b.disabled=true;$("#av-msg").textContent="Rendering the redacted copy (about 20 s per minute of video)…";
+   const r=await api(base+"/redact",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clip:$("#av-clip").value,keep:[q.track],examiner:localStorage.exm||c.case.examiner,purpose:"disclosure copy"})});
+   b.disabled=false;if(r.error){$("#av-msg").textContent=r.error;return}$("#av-msg").textContent=`${r.id} written · logged to custody`;lists(await api(base+"/anveshan"))}});
+ const pre=decodeURIComponent(location.hash.split("/")[4]||"");if(pre){const el=[...$$("#av-pick .av-t")].find(x=>x.dataset.t===pre);if(el)el.click()}
+ $("#av-seal").onclick=async()=>{const b=$("#av-seal");b.disabled=true;b.textContent="Sealing…";
+  const r=await api(base+"/potli",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({examiner:localStorage.exm||c.case.examiner})});
+  b.disabled=false;b.innerHTML=`${ico("lock")}Seal package`;if(r.error){alert(r.error);return}lists(await api(base+"/anveshan"))}}
+
 function jump(ms){window._seekTo=ms;location.hash=`#/case/${encodeURIComponent(CDIR)}/video`}
 
 // ---------------------------------------------------------------- disk + hex
@@ -700,7 +782,7 @@ function tDisk(c){const items=c.evidence_items;const pre=window._hexTo;window._h
  let hoff=0,M=null,sel=-1,hover=-1,wipe=1,showDisk=true,replay=null,hl=pre&&pre.len?{a:pre.off,b:pre.off+pre.len,label:pre.label}:null;
  const cv=$("#dm"),L=92,TOP=40,GAP=1;let cols=96,rows=0,cell=10,W=0,H=0;
  const hatch=(()=>{const p=document.createElement("canvas");p.width=p.height=6;const g=p.getContext("2d");g.fillStyle=DM_COL.metadata;g.fillRect(0,0,6,6);g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1.2;g.beginPath();g.moveTo(0,6);g.lineTo(6,0);g.moveTo(-1,1);g.lineTo(1,-1);g.moveTo(5,7);g.lineTo(7,5);g.stroke();return p})();
- const fillFor=(g,cat)=>cat==="metadata"?g.createPattern(hatch,"repeat"):DM_COL[cat]||"#ccc";
+ const fillFor=(g,cat)=>cat==="metadata"?g.createPattern(hatch,"repeat"):cat==="empty"?(cssv("--empty")||DM_COL.empty):DM_COL[cat]||"#ccc";
  function geom(){const dpr=devicePixelRatio||1;W=cv.clientWidth||900;cell=Math.max(6,Math.floor((W-L-8)/cols));rows=Math.ceil(M.bins/cols);H=TOP+rows*cell+6;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.height=H+"px";const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return g}
  function catOf(c2){if(showDisk&&c2.b/M.bins<=wipe)return c2.cat;if(!showDisk||c2.b/M.bins>wipe){if(c2.k&1)return"index-confirmed";if(c2.k&8)return"metadata";return c2.cat==="empty"?"empty":"unlisted"}return c2.cat}
  function draw(){if(!M)return;const g=geom(),span=cols*M.bytes_per_bin;g.fillStyle="#ffffff";g.fillRect(0,0,W,H);
