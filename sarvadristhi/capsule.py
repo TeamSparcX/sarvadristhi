@@ -11,7 +11,7 @@ depend on the FFmpeg version, so they are listed with their hash but not replaye
 import hashlib
 import json
 import time
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from . import __version__, ed25519
 from .custody import Ledger
@@ -27,11 +27,13 @@ def resolve_source(path: str, near: Path | None = None) -> Path | None:
     or next to the capsule."""
     p = Path(path)
     root = Path(__file__).resolve().parents[1]
+    # a case made on Windows read on Linux (e.g. in Docker): split its path the Windows way
+    parts = PureWindowsPath(path).parts if "\\" in str(path) else p.parts
     tries = [p if p.is_absolute() else root / p]
-    if "kit" in p.parts:
-        tries.append(root.joinpath(*p.parts[p.parts.index("kit"):]))
+    if "kit" in parts:
+        tries.append(root.joinpath(*parts[parts.index("kit"):]))
     if near:
-        tries.append(near / p.name)
+        tries.append(near / parts[-1])
     return next((t for t in tries if t.exists()), None)
 
 

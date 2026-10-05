@@ -754,13 +754,9 @@ def hex_view(app, case: str, eid: str, offset: int, length: int = 256) -> dict:
     ev = next((e for e in c.get("evidence_items", []) if e["id"] == eid), None)
     if ev is None:
         return {"error": "no such evidence item"}
-    p = Path(ev["path"])
-    root = Path(__file__).resolve().parents[1]
-    if not p.is_absolute():
-        p = root / p
-    if not p.exists() and "kit" in p.parts:      # case built on another machine: use this project's kit\
-        p = root.joinpath(*p.parts[p.parts.index("kit"):])
-    if not p.exists():
+    from .capsule import resolve_source          # as recorded, else this project's kit\ (case from another machine)
+    p = resolve_source(ev["path"])
+    if not p:
         return {"error": f"source image not found on this machine: {ev['path']}"}
     offset = max(0, min(offset, (ev["bytes"] or 1) - 1)) // 16 * 16
     with open(p, "rb") as f:
@@ -854,9 +850,11 @@ def sources(app, drives: bool = True) -> dict:
     return {"presets": presets, "drives": drives}
 
 
-def serve(cases: Path, port: int = 8765, open_browser: bool = True):
+def serve(cases: Path, port: int = 8765, open_browser: bool = True, host: str = "127.0.0.1"):
+    """`host` stays 127.0.0.1 except inside a container, where 0.0.0.0 lets Docker forward a port that the
+    host itself publishes on 127.0.0.1 only (see Dockerfile)."""
     app = App(cases)
-    srv = ThreadingHTTPServer(("127.0.0.1", port), handler(app))
+    srv = ThreadingHTTPServer((host, port), handler(app))
     url = f"http://127.0.0.1:{srv.server_address[1]}/"
     print(f"Sarvadristhi workbench on {url}  (cases in {app.cases}); Ctrl+C to stop")
     if open_browser:

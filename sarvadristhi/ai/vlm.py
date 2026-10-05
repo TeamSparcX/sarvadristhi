@@ -9,11 +9,13 @@ disagreement lowers confidence and is surfaced for human review rather than reso
 silently. Nothing leaves the machine."""
 import base64
 import json
+import os
 import re
 import time
 import urllib.request
 
-HOST = "http://127.0.0.1:11434"
+# local Ollama; in Docker the image points this at the host (http://host.docker.internal:11434)
+HOST = os.environ.get("SARVADRISTHI_OLLAMA", "http://127.0.0.1:11434")
 MODEL = "qwen3-vl:4b"
 
 SYSTEM = ("You are a forensic CCTV analyst. Describe only what is visible in the image. Never guess identity, "

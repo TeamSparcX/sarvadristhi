@@ -49,6 +49,7 @@ def main():
     ui.add_argument("--cases", type=Path, default=Path("cases"))
     ui.add_argument("--port", type=int, default=8765)
     ui.add_argument("--no-browser", action="store_true")
+    ui.add_argument("--host", default="127.0.0.1", help="bind address; 0.0.0.0 only inside a container")
 
     v = sub.add_parser("verify-custody", help="check a case's hash-chained custody ledger")
     v.add_argument("case", type=Path)
@@ -142,7 +143,7 @@ def main():
                 run(d["file"], x.case / f"analysis_ch{d['channel']:02d}", f"LIVE-CH{d['channel']}", "live")
     elif x.cmd == "ui":
         from .ui import serve
-        serve(x.cases, x.port, not x.no_browser)
+        serve(x.cases, x.port, not x.no_browser, host=x.host)
     elif x.cmd == "verify-custody":
         from .custody import Ledger
         ok, msg = Ledger(x.case / "custody.jsonl").verify()
