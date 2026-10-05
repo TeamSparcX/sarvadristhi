@@ -66,7 +66,7 @@ def main():
     rp.add_argument("--image", action="append", default=[], metavar="EID=PATH",
                     help="where an evidence image is on this machine, e.g. E1=D:\\evidence\\dvr.img (repeatable)")
 
-    kz = sub.add_parser("kasauti", help="Kasautipeeth: score a real recorder image against a handwritten event log")
+    kz = sub.add_parser("kasauti", help="Recorder validation: score a real recorder image against a handwritten event log")
     kz.add_argument("image")
     kz.add_argument("--events", required=True, type=Path, help="event log CSV (sarvadristhi kasauti-template prints one)")
     kz.add_argument("--out", required=True, type=Path)
@@ -77,7 +77,7 @@ def main():
     kz.add_argument("--physical", action="store_true", help="the image comes from a physical recorder")
     kz.add_argument("--recorder-offset", type=float, default=0.0, help="recorder clock minus reference clock, seconds")
     kz.add_argument("--examiner", default="")
-    sub.add_parser("kasauti-template", help="print the Kasautipeeth event-log template")
+    sub.add_parser("kasauti-template", help="print the Recorder validation event-log template")
 
     x = ap.parse_args()
     if x.cmd == "kasauti-template":

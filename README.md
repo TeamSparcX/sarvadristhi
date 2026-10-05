@@ -85,32 +85,31 @@ raw H.264, each hashed) and `custody.jsonl`.
 
 ## Workbench (`python -m sarvadristhi ui`)
 
-A light, offline browser workbench on 127.0.0.1. Module names are coined for Sarvadristhi ("all-seeing")
-and were checked to be unused on GitHub; each carries an English subtitle in the interface.
+A light, offline browser workbench on 127.0.0.1.
 
 | Module | What it does |
 |---|---|
-| **Drishtipeeth** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, PS flags |
-| **Kanikadarpan** | Frame-to-byte X-ray: while a clip plays, a disk ribbon and a hex panel follow the frame on screen, showing where its bytes are on the seized image and decoding the recorder's own header (DHAV, Honeywell record, MPEG-PS/PES, NAL) |
-| **Nyaydarshika** | Presentation mode: ten guided steps from seizure to verdict, with live case facts (`#/present/<case>`) |
-| **Roopnirnay** | Format hypotheses: every parser's interpretation of each disk with the checks it passes and fails; brand strings shown as weak context and as conflicts |
-| **Ekmatpatra** | Reconciliation: recorder index, frames on disk, recorder log, burned-in clock and exports, camera by camera |
-| **Kaalsthirta** | Clocks: measured drift and clock changes, and how far a clock must be wrong to reverse the order of events |
-| **Kaalshodhan** | Examiner clock correction (recorder to real-world time) with its basis; recorder times are never rewritten |
-| **Saakshyaprashna** | Ask the case: answers only from stored detections, activities and findings, with citations; identity and ungrounded questions refused |
-| **Sakshilekh** | Findings the examiner writes at the playhead, with the frame captured, kept apart from AI output |
-| **Khandmudra** | Segment export without re-encoding, hashed, as a labelled derivative |
-| **Shrinkhalapatra** | The hash-chained custody ledger, re-verified on open |
-| **Punarnirmiti** | Replay capsule: byte ranges behind every clip, Ed25519-signed; rebuild and compare, or flip a byte to watch replay catch it |
-| **Setugrahan** | Live acquisition from a running recorder (ONVIF, Dahua and Hikvision download APIs), password never written to disk; a simulated recorder for demos |
-| **Kasautipeeth** | Real-recorder validation: score an image against a handwritten event log; a passing physical run promotes the format to "real disk" |
-| **Kshamtapatra** | Capability matrix per OEM and function, with sources and trust levels |
-| **Maryadapatra** | How each step answers ISO/IEC 27037, SWGDE DVR acquisition guidance, NIST CFTT, NIST AI RMF, BSA s.63 and the DPDP Act |
-| **Grahanpath** | Live ingest view while an analysis runs |
+| **Case overview** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, PS flags |
+| **Frame X-ray** | Frame-to-byte X-ray: while a clip plays, a disk ribbon and a hex panel follow the frame on screen, showing where its bytes are on the seized image and decoding the recorder's own header (DHAV, Honeywell record, MPEG-PS/PES, NAL) |
+| **Presentation** | Presentation mode: ten guided steps from seizure to verdict, with live case facts (`#/present/<case>`) |
+| **Format hypotheses** | Format hypotheses: every parser's interpretation of each disk with the checks it passes and fails; brand strings shown as weak context and as conflicts |
+| **Reconciliation** | Reconciliation: recorder index, frames on disk, recorder log, burned-in clock and exports, camera by camera |
+| **Clock analysis** | Clocks: measured drift and clock changes, and how far a clock must be wrong to reverse the order of events |
+| **Clock correction** | Examiner clock correction (recorder to real-world time) with its basis; recorder times are never rewritten |
+| **Ask the case** | Ask the case: answers only from stored detections, activities and findings, with citations; identity and ungrounded questions refused |
+| **Examiner findings** | Findings the examiner writes at the playhead, with the frame captured, kept apart from AI output |
+| **Segment export** | Segment export without re-encoding, hashed, as a labelled derivative |
+| **Custody chain** | The hash-chained custody ledger, re-verified on open |
+| **Replay capsule** | Replay capsule: byte ranges behind every clip, Ed25519-signed; rebuild and compare, or flip a byte to watch replay catch it |
+| **Live acquisition** | Live acquisition from a running recorder (ONVIF, Dahua and Hikvision download APIs), password never written to disk; a simulated recorder for demos |
+| **Recorder validation** | Real-recorder validation: score an image against a handwritten event log; a passing physical run promotes the format to "real disk" |
+| **Capability matrix** | Capability matrix per OEM and function, with sources and trust levels |
+| **Standards** | How each step answers ISO/IEC 27037, SWGDE DVR acquisition guidance, NIST CFTT, NIST AI RMF, BSA s.63 and the DPDP Act |
+| **Live ingest** | Live ingest view while an analysis runs |
 | **Pramanshala** | The test-evidence builder (`python -m pramanshala ...`) |
 
-Regenerated reports now include key frames per camera, Sakshilekh findings with their frames, Kaalshodhan
-corrections, Khandmudra segments and the Punarnirmiti seal, and the report's own hashes are logged to custody.
+Regenerated reports now include key frames per camera, Examiner findings findings with their frames, Clock correction
+corrections, Segment export segments and the Replay capsule seal, and the report's own hashes are logged to custody.
 
 Every frame carries an evidence level: **index-confirmed** (in the recorder's live index),
 **carved + timestamp** (recovered, with a recorder-written timestamp), or **content-only**

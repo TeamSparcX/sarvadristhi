@@ -1,4 +1,4 @@
-"""Tests for Anveshan's person grouping and face ownership: tracker breaks are joined, identity
+"""Tests for Person search's person grouping and face ownership: tracker breaks are joined, identity
 switches and people walking through the same spot are not, and a neighbour's face never counts.
 
 Run: python -m pytest -q tests/test_anveshan.py"""

@@ -565,7 +565,7 @@ _MOCK = {}
 
 def start_mock(app) -> dict:
     """A simulated recorder on 127.0.0.1 serving Pramanshala exports through the real Dahua download
-    API and ONVIF, for demonstrating Setugrahan without hardware. Labelled as simulated everywhere."""
+    API and ONVIF, for demonstrating Live acquisition without hardware. Labelled as simulated everywhere."""
     import importlib.util
     root = Path(__file__).resolve().parents[1]
     exports = root / "kit" / "exports"
@@ -586,8 +586,8 @@ def start_mock(app) -> dict:
 
 
 def regenerate_report(case_dir: Path) -> dict:
-    """Re-render the report from case data plus examiner reviews, examiner findings (Sakshilekh),
-    clock corrections (Kaalshodhan), exported segments (Khandmudra), key frames and the replay
+    """Re-render the report from case data plus examiner reviews, examiner findings,
+    clock corrections, exported segments, key frames and the replay
     capsule; custody-logged with the report's own hashes."""
     from . import examiner, report
     from .acquire import hash_file
@@ -816,7 +816,7 @@ def sources(app, drives: bool = True) -> dict:
             "dahua_no_overlay.img": ("Dahua - no overlay, 3 cameras", "Sensor-noise fingerprint attribution")}
     # real MEVA footage in modelled disks (pramanshala.realdemos); the synthetic versions are the fallback
     extra = [(("realdemo/images/cpplus_label_on_real_hikvision.img", "images/cpplus_label_on_hikvision.img"),
-              "Relabelled DVR - 'CP PLUS' string, Hikvision structures", "Roopnirnay: the bytes decide, the label is reported as a conflict"),
+              "Relabelled DVR - 'CP PLUS' string, Hikvision structures", "Format hypotheses: the bytes decide, the label is reported as a conflict"),
              (("realdemo/images/hikvision_h265_formatted.img", "h265/images/hikvision_h265_formatted.img"),
               "Hikvision DVR - H.265, formatted", "Real CCTV in H.265; recovery with recorder timestamps"),
              (("realdemo/images/dahua_h265_overwritten.img", "h265/images/dahua_h265_overwritten.img"),

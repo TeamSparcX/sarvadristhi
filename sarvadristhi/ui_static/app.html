@@ -37,7 +37,7 @@
 :root[data-theme="dark"] .card:before{content:"";position:absolute}
 :root[data-theme="dark"] img,:root[data-theme="dark"] video{filter:none}
 .themebtn{margin-top:10px;width:100%;justify-content:center}
-/* Anveshan */
+/* Person search */
 .av-grid{display:grid;grid-auto-flow:column;grid-auto-columns:118px;gap:10px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x proximity}.av-grid .av-t{scroll-snap-align:start}
 .av-t{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--sunk);cursor:pointer;transition:border-color .15s}
 .av-t:hover,.av-t.on{border-color:var(--acc)}.av-t img{width:100%;height:118px;object-fit:cover;display:block;background:#000}
@@ -272,7 +272,7 @@ svg text{fill:var(--mut);font-size:10.5px;font-family:var(--sans)}
 i.hatch{background:repeating-linear-gradient(45deg,#2D5BD7 0 3px,#8FA9EC 3px 4px)!important}
 .dminstr{font:500 11.5px var(--mono);color:var(--ink2);margin-top:6px;display:flex;align-items:center;gap:7px;min-height:18px;letter-spacing:.02em}.dminstr i{width:10px;height:10px;display:inline-block}
 .hlb{background:#E1251B;color:#fff;border-radius:2px;padding:0 1px}
-/* Kanikadarpan */
+/* Frame X-ray */
 .xr{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,1fr);gap:14px;align-items:start}@media(max-width:1100px){.xr{grid-template-columns:1fr}}
 .xpanel{background:var(--deep);color:var(--deepfg);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .xpanel canvas{width:100%;display:block;border-radius:7px}
@@ -280,7 +280,7 @@ i.hatch{background:repeating-linear-gradient(45deg,#2D5BD7 0 3px,#8FA9EC 3px 4px
 .xread span{font-size:10.5px;color:var(--deepmut);text-transform:uppercase;letter-spacing:.06em}.xread b{font:600 13px var(--mono);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .xhex{font:12px/1.65 var(--mono);color:#cfe3d6;white-space:pre;overflow-x:auto;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px}.xhex .o{color:#6f8a7a}
 .xfields{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;margin-top:6px}.xfields>div{display:flex;gap:7px;align-items:center;min-width:0}.xfields span:nth-child(2){color:var(--deepmut)}.xfields b{margin-left:auto;font:600 11.5px var(--mono);color:#fff;text-align:right}
-/* Nyaydarshika */
+/* Presentation */
 .pres{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:min(1100px,94vw);background:var(--deep);color:var(--deepfg);border-radius:14px;box-shadow:0 18px 50px rgba(10,20,14,.35);z-index:70;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:16px 18px 20px;overflow:hidden}
 .pres .pn{font:650 34px/1 var(--disp);color:var(--mint)}.pres .pn small{font-size:13px;color:var(--deepmut);margin-left:3px}
 .pres h3{color:#fff;font-size:18px;margin:3px 0}.pres p{margin:0;color:#cfe3d6;font-size:13.5px;max-width:80ch}.pres .pc{display:flex;gap:6px}
@@ -386,8 +386,8 @@ function heroArt(){return `<svg viewBox="0 0 560 320" preserveAspectRatio="xMidY
 </svg>`}
 
 // ---------------------------------------------------------------- shell
-const NAV=[["#/","home","Overview","all cases"],["#/new","plus","New analysis","image, USB, exports"],["#/live","bridge","Setugrahan","live from a recorder"],
- ["#/kasauti","touch","Kasautipeeth","real-recorder validation"],["#/caps","matrix","Kshamtapatra","capability matrix"],["#/maryada","scale","Maryadapatra","standards"]];
+const NAV=[["#/","home","Overview","all cases"],["#/new","plus","New analysis","image, USB, exports"],["#/live","bridge","Live acquisition","from a running recorder"],
+ ["#/kasauti","touch","Recorder validation","score a real recorder"],["#/caps","matrix","Capability matrix","support per OEM"],["#/maryada","scale","Standards","what each guideline asks"]];
 const navItem=(href,ic,t,sub,on,extra="")=>`<a href="${href}" class="${on?"on":""}">${ico(ic)}<span class="nt"><span>${t}</span><small>${sub}</small></span>${extra}</a>`;
 function sideHTML(){const c=CASE,d=CDIR;const tab=(location.hash.split("/")[3]||"command");
  const cur=location.hash||"#/";
@@ -396,7 +396,7 @@ function sideHTML(){const c=CASE,d=CDIR;const tab=(location.hash.split("/")[3]||
  if(c&&d){const crit=c.findings.filter(f=>f.severity==="critical").length,leads=(((c.ai.layers||{}).L4||{}).insights||[]).length,rev=Object.keys(c.reviews||{}).filter(k=>k.startsWith("lead:")).length;
   h+=`<div class="navh">Case · ${esc(c.case.case_id)}</div><nav class="nav">${TABS.map(([k,t,ic,sub])=>navItem(`#/case/${encodeURIComponent(d)}/${k}`,ic,t,sub,cur.startsWith("#/case/")&&tab===k,
    (k==="command"&&crit?`<span class="cnt">${crit}</span>`:"")+(k==="review"&&leads?`<span class="cnt ${rev>=leads?"ok":"n"}">${rev}/${leads}</span>`:""))).join("")}</nav>
-   <button class="btn mint" style="justify-content:center" onclick="present()">${ico("play")}Nyaydarshika · present</button>`}
+   <button class="btn mint" style="justify-content:center" onclick="present()">${ico("play")}Present the case</button>`}
  h+=`<div class="sidefoot"><div>Runs on<b>127.0.0.1 · offline</b></div><div>Evidence<b>opened read-only</b></div><div>Build<b>Sarvadristhi ${esc((BOOT&&BOOT.version)||"")}</b></div><button class="btn themebtn" onclick="toggleTheme()">${document.documentElement.dataset.theme==="dark"?"☀ Light theme":"◐ Deep Scan theme"}</button></div>`;
  $("#side").innerHTML=h}
 function topHTML(crumbs,right=""){$("#top").innerHTML=`<div class="crumb">${crumbs}</div><span class="sp"></span>${right}`}
@@ -418,10 +418,10 @@ async function home(){sideHTML();topHTML(`<b>Overview</b>`,`<span class="pill"><
  <div class="bul"><span><span class="dot"></span>Read-only, hashed before and after</span><span><span class="dot"></span>Format decided by bytes, not labels</span><span><span class="dot"></span>Signed replay capsules</span></div>
  <div class="row" style="margin-top:6px"><a class="btn mint" href="#/new">${ico("plus")}Start an analysis</a>${best?`<a class="btn ghostd" href="${link("command")}">Open ${esc(best.case_id)}</a>`:""}</div></div></section>
  <div class="grid g4">
-  <a class="card feat" href="${link("xray")}" style="background:var(--tint);border-color:#cfe5d6"><div class="h"><span class="ico" style="background:var(--deep);color:var(--mint)">${ico("xray")}</span>Watch a frame become bytes</div><p>Play recovered footage and see, frame by frame, the exact place on the seized disk it came from, with the recorder's own header decoded live.</p><span class="go">Kanikadarpan →</span></a>
-  <a class="card feat" href="${link("hypotheses")}"><div class="h"><span class="ico">${ico("layers")}</span>Read the bytes, not the label</div><p>Every format interpretation is tested side by side. Each shows the checks it passes and fails, and a disk can be marked unresolved instead of guessed.</p><span class="go">Roopnirnay →</span></a>
-  <a class="card feat" href="${link("reconcile")}"><div class="h"><span class="ico">${ico("matrix")}</span>Show where sources disagree</div><p>Recorder index, frames on disk, recorder log, burned-in clock and exported copies are compared camera by camera, with each difference stated plainly.</p><span class="go">Ekmatpatra →</span></a>
-  <a class="card feat" href="${link("custody")}"><div class="h"><span class="ico">${ico("replay")}</span>Rebuild any clip on another PC</div><p>A signed capsule lists the exact byte ranges behind every clip. A reviewer rebuilds each one from the image and checks the hash, without our parsers.</p><span class="go">Punarnirmiti →</span></a>
+  <a class="card feat" href="${link("xray")}" style="background:var(--tint);border-color:#cfe5d6"><div class="h"><span class="ico" style="background:var(--deep);color:var(--mint)">${ico("xray")}</span>Watch a frame become bytes</div><p>Play recovered footage and see, frame by frame, the exact place on the seized disk it came from, with the recorder's own header decoded live.</p><span class="go">Frame X-ray →</span></a>
+  <a class="card feat" href="${link("hypotheses")}"><div class="h"><span class="ico">${ico("layers")}</span>Read the bytes, not the label</div><p>Every format interpretation is tested side by side. Each shows the checks it passes and fails, and a disk can be marked unresolved instead of guessed.</p><span class="go">Format hypotheses →</span></a>
+  <a class="card feat" href="${link("reconcile")}"><div class="h"><span class="ico">${ico("matrix")}</span>Show where sources disagree</div><p>Recorder index, frames on disk, recorder log, burned-in clock and exported copies are compared camera by camera, with each difference stated plainly.</p><span class="go">Reconciliation →</span></a>
+  <a class="card feat" href="${link("custody")}"><div class="h"><span class="ico">${ico("replay")}</span>Rebuild any clip on another PC</div><p>A signed capsule lists the exact byte ranges behind every clip. A reviewer rebuilds each one from the image and checks the hash, without our parsers.</p><span class="go">Replay capsule →</span></a>
  </div>
  <div class="row"><h2>Cases</h2><span class="mut small">${cs.length} on this workstation</span></div>
  ${cs.length?`<div class="grid g3">${cs.map(c=>`<a class="card ccard" href="#/case/${encodeURIComponent(c.dir)}">
@@ -438,9 +438,9 @@ const STAGES=[["Acquire","image + MD5/SHA-256"],["Identify","format from bytes"]
 const STAGE_KEYS=["acquire","identify","recover","attribute","clocks","clips","provenance","l1","l2","l3","l4","report"];
 
 // ================================================================ capability matrix
-async function capsPage(){sideHTML();topHTML(`<b>Kshamtapatra</b> · capability matrix`,`<span class="pill">as of ${esc((await capsData()).as_of)}</span>`);const m=await capsData();
+async function capsPage(){sideHTML();topHTML(`<b>Capability matrix</b>`,`<span class="pill">as of ${esc((await capsData()).as_of)}</span>`);const m=await capsData();
  const cell=v=>`<span class="lv lv-${v}">${({real:"real disk",synthetic:"modelled",via:"via Dahua",universal:"universal",none:"—"})[v]||v}</span>`;
- $("#main").innerHTML=`<div class="row"><div class="col" style="gap:4px"><h1>Kshamtapatra <span class="mut" style="font-weight:500;font-size:18px">· what Sarvadristhi supports, per OEM</span></h1><p class="note">Every claim names its level and its sources. “Modelled” means validated on real footage written into the vendor's on-disk layout by Pramanshala. A cell becomes “real disk” only after a passing physical-recorder run in Kasautipeeth.</p></div></div>
+ $("#main").innerHTML=`<div class="row"><div class="col" style="gap:4px"><h1>Capability matrix <span class="mut" style="font-weight:500;font-size:18px">· what Sarvadristhi supports, per OEM</span></h1><p class="note">Every claim names its level and its sources. “Modelled” means validated on real footage written into the vendor's on-disk layout by Pramanshala. A cell becomes “real disk” only after a passing physical-recorder run in Recorder validation.</p></div></div>
  <div class="card pad0"><div class="tblwrap"><table class="cap"><tr><th>OEM</th><th>Trust</th>${m.functions.map(f=>`<th>${esc(f[1])}</th>`).join("")}<th style="text-align:left">Basis</th></tr>
  ${m.oems.map(o=>`<tr><td><b>${esc(o.oem)}</b><div class="tiny mut">${esc(o.family==="unknown"?"universal path":o.family)}</div></td><td><span class="chip ${o.trust==="L2"?"c-ok":o.trust==="L1"?"c-info":"c-n"}" title="${esc(m.trust[o.trust])}">${o.trust}</span></td>${m.functions.map(f=>`<td>${cell(o.cells[f[0]])}</td>`).join("")}<td style="text-align:left;min-width:220px;max-width:300px" class="tiny"><div>${esc(o.note)}</div>${o.sources.length?`<div class="dim">${o.sources.map(esc).join(" · ")}</div>`:""}</td></tr>`).join("")}</table></div></div>
  <div class="grid g2"><div class="card"><h3>Levels</h3><div class="col" style="gap:8px;margin-top:10px">${Object.entries(m.levels).map(([k,v])=>`<div class="row" style="flex-wrap:nowrap">${cell(k)}<span class="small mut">${esc(v)}</span></div>`).join("")}</div></div>
@@ -491,7 +491,7 @@ async function start(){const btn=$("#go");if(btn.disabled)return;showErr("");
 // ================================================================ live job
 function jobPage(id){sideHTML();topHTML(`<a href="#/">Overview</a> / <b id="jtitle">Analysis</b>`,`<span id="jst" class="chip c-info">…</span><span id="jel" class="mut small num"></span><button class="btn sm" id="jcancel">Cancel</button>`);
  $("#main").innerHTML=`<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);align-items:stretch">
- <div class="card"><div class="hd"><h3>Grahanpath <span class="mut" style="font-weight:500">· live ingest</span></h3><span class="sp"></span><span class="tiny mut" id="jitem"></span></div>
+ <div class="card"><div class="hd"><h3>Live ingest</h3><span class="sp"></span><span class="tiny mut" id="jitem"></span></div>
   <div class="strip" id="strip">${"<i></i>".repeat(48*6)}</div>
   <div class="leg" style="margin-top:10px"><span><span class="sw" style="background:var(--empty)"></span>not yet read</span><span><span class="sw" style="background:var(--mint2)"></span>read and hashed</span><span class="dim">The real disk map, coloured by what was found, appears in the workbench when the analysis completes.</span></div></div>
  <div class="verdict" id="jver"><div class="r"><div><div class="l">Stage</div><div class="v" id="jstage">Waiting</div></div></div><div class="r"><div><div class="l">Evidence item</div><div class="v" id="jev">—</div></div></div><div class="r"><div><div class="l">Elapsed</div><div class="v" id="jt">0 s</div></div></div></div></div>
@@ -517,7 +517,7 @@ function jobPage(id){sideHTML();topHTML(`<a href="#/">Overview</a> / <b id="jtit
   $("#jel").textContent=j.state==="queued"?"waiting for the GPU":`${j.elapsed_s}s`;$("#jcancel").style.display=(j.state==="running"||j.state==="queued")?"":"none";
   if(j.state==="failed")$("#jmsg").innerHTML=`<div class="card" style="border-color:var(--crit)"><h3 style="color:var(--crit)">Analysis failed</h3><pre>${esc(L.slice(-14).join("\n"))}</pre><a class="btn sm" href="#/new">Try again</a></div>`;
   if(j.state==="cancelled")$("#jmsg").innerHTML=`<div class="card">Cancelled. Partial output stays in the case folder.</div>`;
-  if(j.state==="done"){$("#jdone").innerHTML=j.kind==="kasauti"?`<a class="btn pri" href="#/kasauti">See the Kasautipeeth result →</a>`:`<a class="btn pri" href="#/case/${encodeURIComponent(j.case)}">Open the workbench for ${esc(j.case)} →</a>`;CASE=null}
+  if(j.state==="done"){$("#jdone").innerHTML=j.kind==="kasauti"?`<a class="btn pri" href="#/kasauti">See the Recorder validation result →</a>`:`<a class="btn pri" href="#/case/${encodeURIComponent(j.case)}">Open the workbench for ${esc(j.case)} →</a>`;CASE=null}
   if(!["running","queued"].includes(j.state))clearInterval(window._poll)};
  $("#jcancel").onclick=async()=>{await fetch(`/api/job/${id}/cancel`,{method:"POST"});tick()};tick();window._poll=setInterval(tick,1000)}
 
@@ -533,17 +533,17 @@ function norm(c){
  c.ai=c.ai||{};c.reviews=c.reviews||{};return c}
 
 // ================================================================ workbench
-const TABS=[["command","Drishtipeeth","grid","case overview"],["video","Timeline & video","film","all cameras, one clock"],["xray","Kanikadarpan","xray","frame-to-byte X-ray"],
- ["hypotheses","Roopnirnay","layers","format hypotheses"],["disk","Disk & hex","disk","what was found where"],["reconcile","Ekmatpatra","matrix","where sources agree"],
- ["provenance","Provenance","prov","exports vs recorder"],["time","Kaalsthirta","clock","clocks, offsets, robustness"],["ask","Saakshyaprashna","ask","ask the evidence"],
- ["ai","AI reasoning","ai","four layers, inspectable"],["anveshan","Anveshan","search","find a person · redact · seal"],["review","Review & report","check","Sakshilekh, Khandmudra"],["custody","Shrinkhalapatra","lock","custody · Punarnirmiti"]];
+const TABS=[["command","Case overview","grid","verdict, cameras, findings"],["video","Timeline & video","film","all cameras, one clock"],["xray","Frame X-ray","xray","every frame to its bytes"],
+ ["hypotheses","Format hypotheses","layers","which format, and why"],["disk","Disk & hex","disk","what was found where"],["reconcile","Reconciliation","matrix","where sources agree"],
+ ["provenance","Provenance","prov","exports vs recorder"],["time","Clock analysis","clock","offsets, changes, robustness"],["ask","Ask the case","ask","answers from case data"],
+ ["ai","AI reasoning","ai","four layers, inspectable"],["anveshan","Person search","search","find a person · redact · seal"],["review","Review & report","check","findings, segments, report"],["custody","Custody chain","lock","ledger · replay capsule"]];
 async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<div class="card empty">Loading case…</div>`;CASE=norm(await api("/api/case/"+encodeURIComponent(dir)));CDIR=dir;SEL=null}
  const c=CASE,F=p=>`/case/${encodeURIComponent(dir)}/file/${p}`;window.F=F;sideHTML();
  const po=c.poison_scorecard||[];
  topHTML(`<a href="#/">Cases</a> / <b>${esc(c.case.case_id)}</b> / ${esc((TABS.find(t=>t[0]===tab)||TABS[0])[1])}`,
   `<span class="pill">${esc(c.case.kind||"recorder-disk")} · ${c.evidence_items.length} item${c.evidence_items.length>1?"s":""}</span>
    <span class="pill" style="${c.custody_now.ok?"color:var(--ok);background:var(--ok-bg);border-color:transparent":"color:var(--crit);background:var(--crit-bg);border-color:transparent"}"><span class="dot"></span>${c.custody_now.ok?"Chain intact":"Chain broken"} · ${esc(c.custody_now.status.split(",")[0])}</span>
-   <button class="btn" onclick="openInsp()">${ico("eye")}Proof</button><button class="btn" onclick="present()">${ico("play")}Present</button><a class="btn pri" href="#/case/${encodeURIComponent(dir)}/custody">${ico("replay")}Punarnirmiti</a>`);
+   <button class="btn" onclick="openInsp()">${ico("eye")}Proof</button><button class="btn" onclick="present()">${ico("play")}Present</button><a class="btn pri" href="#/case/${encodeURIComponent(dir)}/custody">${ico("replay")}Replay capsule</a>`);
  $("#main").innerHTML=`${c.scenario?`<div class="banner">${ico("warn",'width="16" height="16" style="flex:none;margin-top:1px"')}<span><b>Test bench.</b> ${esc(c.scenario.nature)}. Footage: ${esc(c.scenario.footage.dataset)} · ${esc(c.scenario.footage.license)}.</span></div>`:""}
  <div id="tabc" class="col" style="gap:14px"></div>`;
  ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,anveshan:tAnveshan,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
@@ -709,14 +709,14 @@ function tVideo(c,F){const clips=c.clips.filter(k=>k.mp4_file&&k.start_ms!=null)
  window._seekClip=id=>{const k=c.byClip[id];if(k&&k.start_ms)set(k.start_ms+500)};window.seek=set;draw();
  if(window._seekTo){set(window._seekTo);window._seekTo=null}else{const first=acts[0];set(first?first.from_ms:t0)}}
 
-// ======================================================================= Anveshan · Avaran · Saakshyapotli
+// ======================================================================= Person search · Redacted copy · Evidence package
 async function tAnveshan(c,F){const base=`/api/case/${encodeURIComponent(CDIR)}`;
- $("#tabc").innerHTML=`<div class="card"><div class="row"><h2 style="margin:0">Anveshan</h2><span class="mut">find a person across every camera of every item</span><span class="sp"></span><span class="chip" style="background:var(--warn-bg);color:var(--warn)">ranked leads · not identification</span></div>
+ $("#tabc").innerHTML=`<div class="card"><div class="row"><h2 style="margin:0">Person search</h2><span class="mut">find a person across every camera of every item</span><span class="sp"></span><span class="chip" style="background:var(--warn-bg);color:var(--warn)">ranked leads · not identification</span></div>
  <div class="mut" style="margin-top:6px;font-size:12.5px">Pick a person. Tracker breaks are joined first (same camera, same spot, same clothes), so each person appears once. Every other person is then ranked by clothing colour judged against the rest of the case and, where both crops hold the person's own face, by face similarity. Colour alone is never more than a possible lead. People on the same camera at the same time are excluded (one person cannot be in two places).</div>
  <div id="av-pick" class="av-grid" style="margin-top:12px"><div class="mut">Loading…</div></div></div>
  <div id="av-res"></div>
- <div class="grid g2"><div class="card" id="av-red"><h3 style="margin:0 0 6px">Avaran · redacted copy</h3><div class="mut" style="font-size:12.5px">Choose a subject above, then blur everyone else in one of their clips. The original clip is never changed.</div><div id="av-redl" style="margin-top:10px"></div></div>
- <div class="card" id="av-pot"><div class="row"><h3 style="margin:0">Saakshyapotli · sealed evidence package</h3><span class="sp"></span><button class="btn pri" id="av-seal">${ico("lock")}Seal package</button></div>
+ <div class="grid g2"><div class="card" id="av-red"><h3 style="margin:0 0 6px">Redacted copy</h3><div class="mut" style="font-size:12.5px">Choose a subject above, then blur everyone else in one of their clips. The original clip is never changed.</div><div id="av-redl" style="margin-top:10px"></div></div>
+ <div class="card" id="av-pot"><div class="row"><h3 style="margin:0">Sealed evidence package</h3><span class="sp"></span><button class="btn pri" id="av-seal">${ico("lock")}Seal package</button></div>
  <div class="mut" style="font-size:12.5px;margin-top:6px">One zip to hand over: report, case data, custody ledgers, clips, capsule, examiner work and redactions, with a SHA-256 manifest signed by the examiner key. Its hash is written to the custody ledger.</div><div id="av-potl" style="margin-top:10px"></div></div></div>`;
  const D=await api(base+"/anveshan");
  if(D.error){$("#av-pick").innerHTML=`<div class="mut">${esc(D.error)}</div>`;return}
@@ -888,7 +888,7 @@ function tTime(c){const cams=[...new Map(c.clips.filter(k=>k.start_ms&&k.raw_fil
  const steps={};for(const f of c.findings){const ch=f.detail&&f.detail.channel;if(f.kind==="clock-change")steps[ch]=f.detail.steps;}
  const acts=(((c.ai.layers||{}).L4||{}).activities||[]).filter(a=>c.byClip[a.clip]&&c.byClip[a.clip].evidence!=="E3");
  const camList=[...new Set(acts.map(a=>a.camera))];
- $("#tabc").innerHTML=`<div class="col" style="gap:4px"><h2>Kaalsthirta <span class="mut" style="font-weight:500;font-size:15px">· clocks, corrections, robustness</span></h2><p class="note">The on-screen clock is never trusted as truth. Each line is overlay time minus recorder time: a step is a clock change, a flat offset is drift. Every event in this case uses the recorder clock.</p></div>
+ $("#tabc").innerHTML=`<div class="col" style="gap:4px"><h2>Clock analysis <span class="mut" style="font-weight:500;font-size:15px">· clocks, corrections, robustness</span></h2><p class="note">The on-screen clock is never trusted as truth. Each line is overlay time minus recorder time: a step is a clock change, a flat offset is drift. Every event in this case uses the recorder clock.</p></div>
  <div class="card" id="kaal"></div><div class="card"><div class="hd"><h3>Camera clocks against the recorder clock</h3></div><div id="tc"></div></div>
  ${acts.length?`<div class="card"><div class="hd"><h3>Timeline robustness</h3><span class="tiny mut">how wrong would one camera's clock have to be to reverse the order of events?</span></div>
  <div class="grid" style="grid-template-columns:minmax(260px,1fr) minmax(0,2fr);align-items:start">
@@ -963,7 +963,7 @@ function tReview(c,F){const L=(c.ai.layers||{}).L4;const ins=L?L.insights:[];con
   <div style="flex:1;min-width:280px"><div class="row" style="gap:8px"><span class="mono dim">${i.id}</span>${sevChip(i.severity)}<b>${esc(i.title)}</b><span class="tiny mut">${esc(i.rule)} · conf ${i.confidence}</span></div><div class="small" style="margin:6px 0">${esc(i.statement)}</div>
   <div class="row" style="gap:6px">${i.citations.slice(0,5).map(x=>`<button class="pill" style="cursor:pointer;padding:2px 9px 2px 2px" onclick="jump(${((tracks.find(t=>t.id===x.track))||{}).abs_best_ms||0})"><img src="${F(x.thumb)}" style="width:26px;height:26px;border-radius:5px;object-fit:cover">${esc(x.camera)} ${x.time}</button>`).join("")}</div></div>
   <div style="width:290px"><input id="note_${i.id}" placeholder="Note (optional)" value="${esc((r||{}).note||"")}"><div class="row" style="gap:6px;margin-top:8px">${["accepted","rejected","unresolved"].map(d=>`<button class="btn sm ${r&&r.decision===d?"pri":""}" onclick="decide('${i.id}','${d}')">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div>${r?`<div class="tiny mut" style="margin-top:5px">${esc(r.decision)} · ${esc(r.utc)}</div>`:""}</div></div></div>`}).join("")||`<div class="card empty">No AI leads in this case.</div>`}`;
- $("#regen").onclick=async()=>{$("#regmsg").textContent="Rendering…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/report`,{method:"POST",body:"{}"});$("#regmsg").innerHTML=r.ok?`<span style="color:var(--ok)">✓ Report regenerated with key frames, Sakshilekh, Kaalshodhan, Khandmudra and Punarnirmiti, and logged to custody.</span>${r.hashes?`<div class="mono tiny" style="margin-top:4px">${Object.entries(r.hashes).map(([k,v])=>`${k} sha256 ${v}`).join("<br>")}</div>`:""}`:esc(r.error||"failed")};examinerLists(c)}
+ $("#regen").onclick=async()=>{$("#regmsg").textContent="Rendering…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/report`,{method:"POST",body:"{}"});$("#regmsg").innerHTML=r.ok?`<span style="color:var(--ok)">✓ Report regenerated with key frames, Examiner findings, Clock correction, Segment export and Replay capsule, and logged to custody.</span>${r.hashes?`<div class="mono tiny" style="margin-top:4px">${Object.entries(r.hashes).map(([k,v])=>`${k} sha256 ${v}`).join("<br>")}</div>`:""}`:esc(r.error||"failed")};examinerLists(c)}
 async function decide(id,d){const i=CASE.ai.layers.L4.insights.find(x=>x.id===id);const r=await api(`/api/case/${encodeURIComponent(CDIR)}/review`,{method:"POST",body:JSON.stringify({key:"lead:"+id,decision:d,note:$("#note_"+id).value,examiner:localStorage.exm||CASE.case.examiner,statement:i.statement})});
  if(r.ok){CASE.reviews=r.reviews;tReview(CASE,window.F);sideHTML()}}
 
@@ -974,15 +974,15 @@ async function tCustody(c,F){const e=c.custody_now.entries||c.custody.entries;
  <div class="verdict"><div class="r"><div><div class="l">Case chain, re-verified now</div><div class="v">${c.custody_now.ok?"Intact":"Broken"}<small>${esc(c.custody_now.status)}</small></div></div><span class="ic ${c.custody_now.ok?"":"bad"}">${ico("shield")}</span></div>
   ${c.evidence_items.map(x=>`<div class="r"><div><div class="l">${esc(x.id)} · ${esc(x.name)}</div><div class="v" style="font-size:15px">${x.custody_ok?"✓":"✗"} ${esc(x.custody)}</div></div></div>`).join("")}
   <div class="r"><div><div class="l">Report</div><div class="v" style="font-size:15px">${c.report&&c.report.pdf?`<a href="${F("report.pdf")}" target="_blank" style="color:var(--mint)">PDF</a> · `:""}<a href="${F("report.html")}" target="_blank" style="color:var(--mint)">HTML</a><small>BSA s.63(4) data sheet in Annex A</small></div></div></div></div></div>
- <div class="card"><div class="hd"><h3>Shrinkhalapatra</h3><span class="tiny mut">hash-chained custody: each block seals the one before it</span></div><div class="chainrow">${e.map((x,i)=>`${i?'<span class="arrow">→</span>':""}<div class="blk" title="${esc(JSON.stringify(x.details))}"><div class="h">#${x.seq} ${esc(x.action)}</div><div class="m">${esc(x.utc.slice(11,19))} · ${x.hash.slice(0,10)}…</div><div class="m dim">prev ${x.prev.slice(0,10)}…</div></div>`).join("")}</div></div>`;
+ <div class="card"><div class="hd"><h3>Custody chain</h3><span class="tiny mut">hash-chained custody: each block seals the one before it</span></div><div class="chainrow">${e.map((x,i)=>`${i?'<span class="arrow">→</span>':""}<div class="blk" title="${esc(JSON.stringify(x.details))}"><div class="h">#${x.seq} ${esc(x.action)}</div><div class="m">${esc(x.utc.slice(11,19))} · ${x.hash.slice(0,10)}…</div><div class="m dim">prev ${x.prev.slice(0,10)}…</div></div>`).join("")}</div></div>`;
  capPanel()}
 async function capPanel(res){const box=$("#capbox");if(!box)return;const s=await api(`/api/case/${encodeURIComponent(CDIR)}/capsule`);
- if(!s.exists){box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Punarnirmiti</h3><div class="tiny mut">replay capsule · not built yet for this case</div></div></div>
+ if(!s.exists){box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Replay capsule</h3><div class="tiny mut">replay capsule · not built yet for this case</div></div></div>
   <p class="note">A capsule records the exact byte ranges of the preserved images behind every recovered clip, in order, with the hash recorded at analysis time, and seals the list with this workstation's Ed25519 key. A reviewer with the capsule and the images can rebuild every clip without Sarvadristhi's parsers.</p>
   <div class="row" style="margin-top:12px"><button class="btn pri" id="capbuild">${ico("lock")}Build and seal capsule</button><span class="tiny mut" id="capmsg"></span></div>`;
   $("#capbuild").onclick=async()=>{$("#capbuild").disabled=true;$("#capmsg").textContent="Re-running parsers on the preserved images and checking every clip…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/capsule`,{method:"POST",body:"{}"});
    if(r.error){$("#capmsg").textContent=r.error;$("#capbuild").disabled=false;return}toast(`Capsule sealed: ${r.built_ok}/${r.clips} clips self-checked`);capPanel()};return}
- box.innerHTML=`<div class="row"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Punarnirmiti</h3><div class="tiny mut">replay capsule · sealed ${esc(s.created_utc)} · key <span class="mono">${esc(s.key_fingerprint)}</span></div></div><span class="sp"></span><span class="chip ${s.signature_ok?"c-ok":"c-crit"}">${s.signature_ok?"signature valid":"signature INVALID"}</span></div>
+ box.innerHTML=`<div class="row"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Replay capsule</h3><div class="tiny mut">replay capsule · sealed ${esc(s.created_utc)} · key <span class="mono">${esc(s.key_fingerprint)}</span></div></div><span class="sp"></span><span class="chip ${s.signature_ok?"c-ok":"c-crit"}">${s.signature_ok?"signature valid":"signature INVALID"}</span></div>
   <div class="grid g3" style="margin:14px 0"><div><div class="eyebrow">Clips</div><div style="font:650 24px var(--disp)">${s.clips}</div></div><div><div class="eyebrow">Byte ranges</div><div style="font:650 24px var(--disp)">${n0(s.ranges)}</div></div><div><div class="eyebrow">Images</div><div style="font:650 24px var(--disp)">${s.items.length}</div></div></div>
   <div class="note">${esc(s.definition)}</div>
   <div class="row" style="margin-top:14px"><button class="btn pri" id="rp">${ico("replay")}Replay now</button><select id="tamper" style="width:auto;max-width:260px"><option value="">no tampering</option>${s.clip_ids.map(id=>`<option value="${esc(id)}">simulate a flipped byte in ${esc(id)}</option>`).join("")}</select><span class="tiny mut" id="rpmsg"></span></div>
@@ -995,12 +995,12 @@ async function capPanel(res){const box=$("#capbox");if(!box)return;const s=await
    <div class="tblwrap" style="max-height:360px;overflow:auto"><table><tr><th>Clip</th><th>Kind</th><th>Ranges</th><th>Bytes</th><th>Rebuilt SHA-256</th><th>Result</th></tr>${r.clips.map(k=>`<tr class="${k.ok?"":"del"}"><td class="mono">${esc(k.id)}</td><td class="tiny">${esc(k.kind)}</td><td class="num">${n0(k.ranges)}</td><td class="num">${size(k.bytes)}</td><td class="mono tiny">${esc((k.sha256||"").slice(0,20))}…</td><td>${k.ok?`<span class="chip c-ok">✓ identical</span>`:`<span class="chip c-crit">✗ ${esc(k.why||"")}</span>`}</td></tr>`).join("")}</table></div>
    <div class="tiny mut" style="margin-top:8px">Logged to the custody chain as “replay-verified”.${t?" The flipped byte existed only in memory; the evidence image was not touched.":""}</div>`;
   toast(all?`All ${r.total} clips reproduced byte for byte`:`${r.total-r.reproduced} clip(s) did not reproduce`)}}
-// ================================================================ Kanikadarpan: frame-to-byte X-ray
+// ================================================================ Frame X-ray: frame-to-byte X-ray
 const LVLC={"index-confirmed":"#1f9d61","carved + timestamp":"#d98a0b","content-only":"#d4467b"};
 const FIELDC=["#7fe3a6","#ffd27a","#9cc3ff","#ff9f8a","#c9a8ff","#7ad7d0","#f2b8d8","#b7e07a"];
 async function tXray(c,F){const vids=c.clips.filter(k=>k.mp4_file);const pick=(window._arg&&c.byClip[window._arg])||vids.find(k=>k.evidence_level!=="content-only"&&k.start_ms)||vids[0];window._arg=null;
  if(!pick){$("#tabc").innerHTML=`<div class="card empty">No playable clips.</div>`;return}
- $("#tabc").innerHTML=`<div class="row"><div class="col" style="gap:4px;flex:1;min-width:300px"><h2>Kanikadarpan <span class="mut" style="font-weight:500;font-size:15px">· frame-to-byte X-ray</span></h2>
+ $("#tabc").innerHTML=`<div class="row"><div class="col" style="gap:4px;flex:1;min-width:300px"><h2>Frame X-ray <span class="mut" style="font-weight:500;font-size:15px">· frame-to-byte X-ray</span></h2>
   <p class="note">Play a recovered clip and watch where each frame lives on the seized disk. The ribbons follow the frame on screen; the hex panel reads that frame's first bytes from the original image (read-only) and decodes the recorder's own header.</p></div>
   <select id="xclip" style="width:auto;max-width:360px">${vids.map(k=>`<option value="${esc(k.id)}" ${k.id===pick.id?"selected":""}>${esc(k.label)} · ${esc(k.id)}</option>`).join("")}</select></div>
  <div class="xr"><div class="col"><div class="vtile" style="min-height:0"><video id="xv" src="${F("clips/"+pick.mp4_file)}" poster="${stillURL(pick,1)}" muted playsinline controls></video><span class="osd" style="top:10px;bottom:auto;left:auto;right:10px" id="xosd"></span></div>
@@ -1055,26 +1055,26 @@ async function tXray(c,F){const vids=c.clips.filter(k=>k.mp4_file);const pick=(w
  draw(null);requestAnimationFrame(tick);if(window._present)setTimeout(()=>v.play().catch(()=>{}),400);
  if(window._seekMs&&X.start_ms){const s=Math.max(0,(window._seekMs-X.start_ms)/1000);window._seekMs=null;const go=()=>{v.currentTime=s};v.readyState>=1?go():v.addEventListener("loadedmetadata",go,{once:true})}}
 
-// ================================================================ Nyaydarshika: presentation mode
+// ================================================================ Presentation: presentation mode
 function presSteps(){const c=CASE,po=c.poison_scorecard||[],pv=(c.provenance||[]).find(r=>r.edits&&r.edits.length),crit=c.findings.filter(f=>f.severity==="critical").length;
  const edit=pv?pv.edits[0]:null,drift=c.clips.filter(k=>k.drift_s).map(k=>`${k.camera} ${k.drift_s>0?"+":""}${k.drift_s} s`).slice(0,3).join(", ");
  return [
   ["command","The seizure",`${c.evidence_items.length} evidence item(s), opened read-only. Hashes before and after analysis are ${c.evidence.unchanged?"identical":"DIFFERENT"}; the custody chain is ${c.custody_now.ok?"intact":"broken"}.${po.length?` ${po.filter(p=>p.caught).length} of ${po.length} planted manipulations caught.`:""}`],
-  ["hypotheses","Roopnirnay · the bytes decide","Every parser tests every disk. The winning interpretation shows the structures it explains; brand labels on the disk are weak context and are reported when they disagree."],
+  ["hypotheses","Format hypotheses · the bytes decide","Every parser tests every disk. The winning interpretation shows the structures it explains; brand labels on the disk are weak context and are reported when they disagree."],
   ["disk","Recovery from formatted space","Each cell is a slice of the seized image: green is in the recorder's live index, amber was carved from space the index no longer lists. Click any cell to read the original bytes."],
-  ["reconcile","Ekmatpatra · where sources disagree","Recorder index, frames on disk, recorder log, burned-in clock and exported copies, camera by camera. Disagreements are stated, not hidden."],
+  ["reconcile","Reconciliation · where sources disagree","Recorder index, frames on disk, recorder log, burned-in clock and exported copies, camera by camera. Disagreements are stated, not hidden."],
   ["provenance","The edited export",edit?`Frame-by-frame matching against the recorder shows ${(edit.frames_removed/(c.byClip[pv.export]||{fps:10}).fps||0).toFixed(1)} s removed: ${edit.summary}`:"Exports are matched frame by frame against recorder footage."],
-  ["time","Kaalsthirta · clocks that lie",`Burned-in camera clocks are never trusted as truth.${drift?` Measured: ${drift}.`:""} The robustness chart shows how many event orders would flip had they been trusted.`],
-  ["xray","Kanikadarpan · every frame to its bytes","While the clip plays, the marker on the disk ribbon is the exact place on the seized disk this frame came from; the hex is read live from the original image and the recorder's own header is decoded."],
-  ["ask","Saakshyaprashna · ask the evidence","Questions are answered only from what the case records, with a citation for every item. It refuses to identify people and refuses questions it cannot ground."],
-  ["custody","Punarnirmiti · rebuild on another PC","A signed capsule lists the byte ranges behind every clip. Replay rebuilds each clip from the images and checks its hash; flip one byte and exactly that clip fails."],
+  ["time","Clock analysis · clocks that lie",`Burned-in camera clocks are never trusted as truth.${drift?` Measured: ${drift}.`:""} The robustness chart shows how many event orders would flip had they been trusted.`],
+  ["xray","Frame X-ray · every frame to its bytes","While the clip plays, the marker on the disk ribbon is the exact place on the seized disk this frame came from; the hex is read live from the original image and the recorder's own header is decoded."],
+  ["ask","Ask the case","Questions are answered only from what the case records, with a citation for every item. It refuses to identify people and refuses questions it cannot ground."],
+  ["custody","Replay capsule · rebuild on another PC","A signed capsule lists the byte ranges behind every clip. Replay rebuilds each clip from the images and checks its hash; flip one byte and exactly that clip fails."],
   ["command","Verdict",`${crit} critical finding(s), every one traceable to source bytes, every AI output a lead until an examiner accepts it.`]]}
 function present(){if(!CASE)return;window._present={i:0,auto:false};presGo(0)}
 function presGo(i){const S=presSteps();const p=window._present;if(!p)return;p.i=Math.max(0,Math.min(S.length-1,i));const [tab,title,text]=S[p.i];
  if(tab==="ask")window._arg=CASE.findings.some(f=>f.kind==="export-edited"||f.kind==="deleted-file")?"Was anything deleted or edited?":"Any clock changes?";
  const h=`#/case/${encodeURIComponent(CDIR)}/${tab}`;if(location.hash!==h)location.hash=h;else route();
  let el=$("#pres");if(!el){el=document.createElement("div");el.id="pres";el.className="pres";document.body.appendChild(el)}
- el.innerHTML=`<div class="pn">${String(p.i+1).padStart(2,"0")}<small>/ ${S.length}</small></div><div class="pt"><div class="eyebrow" style="color:var(--mint)">Nyaydarshika · ${esc(CASE.case.case_id)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p></div>
+ el.innerHTML=`<div class="pn">${String(p.i+1).padStart(2,"0")}<small>/ ${S.length}</small></div><div class="pt"><div class="eyebrow" style="color:var(--mint)">Presentation · ${esc(CASE.case.case_id)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p></div>
   <div class="pc"><button class="btn ghostd" onclick="presGo(window._present.i-1)">◀</button><button class="btn mint" onclick="presGo(window._present.i+1)">Next ▶</button>
   <button class="btn ghostd" id="pauto">${p.auto?"Pause":"Auto"}</button><button class="btn ghostd" onclick="presEnd()">Close</button></div><div class="pbar"><i style="width:${(p.i+1)/S.length*100}%"></i></div>`;
  $("#pauto").onclick=()=>{p.auto=!p.auto;clearTimeout(p.t);if(p.auto)p.t=setTimeout(()=>presGo(p.i+1),9000);presGo(p.i)};
@@ -1083,9 +1083,9 @@ function presGo(i){const S=presSteps();const p=window._present;if(!p)return;p.i=
 function presEnd(){if(window._present)clearTimeout(window._present.t);window._present=null;const el=$("#pres");if(el)el.remove()}
 document.addEventListener("keydown",e=>{if(!window._present||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(e.key==="ArrowRight")presGo(window._present.i+1);if(e.key==="ArrowLeft")presGo(window._present.i-1);if(e.key==="Escape")presEnd()});
 
-// ================================================================ Setugrahan: live acquisition
-async function livePage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Setugrahan</b> · live acquisition`);
- $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Setugrahan <span class="mut" style="font-weight:500;font-size:18px">· acquire from a running recorder</span></h1>
+// ================================================================ Live acquisition: live acquisition
+async function livePage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Live acquisition</b>`);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Live acquisition <span class="mut" style="font-weight:500;font-size:18px">· acquire from a running recorder</span></h1>
  <p class="note">When the recorder cannot be powered down or its disk imaged, pull footage through its own interfaces. Every step goes to the custody chain: device identity over ONVIF, the recorder's clock against this workstation, the recordings found, and each download with its hash. Downloads are then analysed like any other evidence.</p></div>
  <div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);align-items:start">
  <div class="card"><div class="hd"><h3>Recorder</h3><span class="sp"></span><button class="btn sm" id="lmock">${ico("bridge")}Start simulated recorder</button></div><div id="lbanner"></div>
@@ -1109,24 +1109,24 @@ async function livePage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Set
   const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();
   if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
 
-// ================================================================ Kasautipeeth: real-recorder validation
-async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Kasautipeeth</b> · real-recorder validation`);const runs=await api("/api/kasauti").catch(()=>[]);
- $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Kasautipeeth <span class="mut" style="font-weight:500;font-size:18px">· the touchstone</span></h1>
- <p class="note">Modelled images prove the method; only a real recorder proves the tool. Record on a real DVR while writing down what happens, image its disk, and let Kasautipeeth score what Sarvadristhi recovers against your log. A passing physical run promotes that format to “real disk” in Kshamtapatra.</p></div>
+// ================================================================ Recorder validation: real-recorder validation
+async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Recorder validation</b>`);const runs=await api("/api/kasauti").catch(()=>[]);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Recorder validation <span class="mut" style="font-weight:500;font-size:18px">· the touchstone</span></h1>
+ <p class="note">Modelled images prove the method; only a real recorder proves the tool. Record on a real DVR while writing down what happens, image its disk, and let Recorder validation score what Sarvadristhi recovers against your log. A passing physical run promotes that format to “real disk” in Capability matrix.</p></div>
  <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start">
  <div class="card"><div class="hd"><h3>Protocol</h3><span class="sp"></span><a class="btn sm" href="/api/kasauti/template.csv">${ico("doc")}Event-log template</a></div>
   <ol class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;color:var(--ink2)">
   <li>Note make, model, serial and firmware from the recorder's menu.</li><li>Compare the recorder clock with a reference (phone on NTP); write down the offset.</li>
   <li>Record on two or more cameras; write each start and end time, and anything that happens in view.</li><li>Delete a recording from the menu, or format the disk; write the time.</li>
   <li>Optionally change one camera's clock; write the time and the change.</li><li>Power down, remove the disk, image it through a write-blocker (<span class="mono">sarvadristhi acquire</span>).</li>
-  <li>Run Kasautipeeth with the image and the log.</li></ol></div>
+  <li>Run Recorder validation with the image and the log.</li></ol></div>
  <div class="card"><div class="hd"><h3>Run</h3><span class="sp"></span><button class="btn sm" id="kreh">Rehearse on a modelled disk</button></div>
   <div class="grid g2"><div style="grid-column:1/-1"><label class="lb" style="margin-top:0">Disk image</label><input id="kimg" placeholder="D:\\evidence\\dvr.img"></div>
   <div style="grid-column:1/-1"><label class="lb">Event log (CSV)</label><input id="kev" placeholder="D:\\evidence\\event_log.csv"></div>
   <div><label class="lb">Make</label><input id="kmake"></div><div><label class="lb">Model</label><input id="kmodel"></div><div><label class="lb">Serial</label><input id="kser"></div><div><label class="lb">Firmware</label><input id="kfw"></div>
   <div><label class="lb">Recorder minus reference (s)</label><input id="koff" value="0"></div><div><label class="lb">Examiner</label><input id="kexm" value="${esc(localStorage.exm||"")}"></div></div>
   <label class="row small" style="margin-top:12px;gap:8px"><input type="checkbox" id="kphys" style="width:auto"> This image comes from a physical recorder</label>
-  <div id="kerr" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div><div class="row" style="margin-top:14px"><button class="btn pri" id="kgo">${ico("touch")}Run Kasautipeeth</button></div></div></div>
+  <div id="kerr" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div><div class="row" style="margin-top:14px"><button class="btn pri" id="kgo">${ico("touch")}Run Recorder validation</button></div></div></div>
  <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Runs</h3><span class="tiny mut">${runs.length} on this workstation</span></div>${runs.length?`<div class="tblwrap"><table><tr><th>When</th><th>Device</th><th>Kind</th><th>Detected family</th><th>Mean coverage</th><th>Logged events detected</th></tr>
   ${runs.map(r=>`<tr><td class="mono tiny">${esc(r.utc)}</td><td>${esc([r.device.make,r.device.model,r.device.serial].filter(Boolean).join(" ")||"—")}</td><td>${r.physical_recorder?`<span class="chip c-ink">physical recorder</span>`:`<span class="chip c-n">rehearsal</span>`}</td><td>${esc(r.family)} · ${r.confidence}</td><td class="num">${r.mean_coverage==null?"—":pct(r.mean_coverage)}</td><td>${esc(r.events_detected)}</td></tr>`).join("")}</table></div>`:`<div class="empty">No runs yet. Rehearse on a modelled disk to see the report, then run it on a real recorder.</div>`}</div>`;
  $("#kreh").onclick=async()=>{const r=await api("/api/kasauti/rehearsal",{method:"POST",body:"{}"});if(r.error){toast(r.error);return}$("#kimg").value=r.image;$("#kev").value=r.events;$("#kmake").value="Pramanshala (modelled)";$("#kmodel").value=r.model;$("#kphys").checked=false;toast("Rehearsal log written from ground truth")};
@@ -1135,40 +1135,40 @@ async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>
    kasauti:{image:$("#kimg").value,events:$("#kev").value,physical:$("#kphys").checked,recorder_offset_s:+$("#koff").value||0,device:{make:$("#kmake").value,model:$("#kmodel").value,serial:$("#kser").value,firmware:$("#kfw").value}}};
   const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
 
-// ================================================================ Maryadapatra: standards
-async function maryadaPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Maryadapatra</b> · standards`);const m=await api("/api/standards");
+// ================================================================ Standards: standards
+async function maryadaPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Standards</b>`);const m=await api("/api/standards");
  const st=s=>s.startsWith("supported")&&!s.includes("only")?"c-ok":s.startsWith("supported")?"c-info":s.includes("ready")||s.includes("data sheet")?"c-warn":"c-n";
- $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Maryadapatra <span class="mut" style="font-weight:500;font-size:18px">· the standards it answers to</span></h1><p class="note">${esc(m.note)}</p></div>
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Standards <span class="mut" style="font-weight:500;font-size:18px">· the standards it answers to</span></h1><p class="note">${esc(m.note)}</p></div>
  ${m.standards.map(s=>`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>${esc(s.id)}</h3><span class="tiny mut">${esc(s.title)}</span></div><div class="tblwrap"><table><tr><th>Area</th><th>What it asks</th><th>How Sarvadristhi answers</th><th>Where</th><th>Status</th></tr>
  ${s.items.map(i=>`<tr><td><b>${esc(i.area)}</b></td><td class="small">${esc(i.ask)}</td><td class="small">${esc(i.how)}</td><td class="tiny mut">${esc(i.where)}</td><td><span class="chip ${st(i.status)}">${esc(i.status)}</span></td></tr>`).join("")}</table></div></div>`).join("")}`}
 
-// ================================================================ examiner tools (Sakshilekh, Khandmudra, Kaalshodhan)
+// ================================================================ examiner tools (Examiner findings, Segment export, Clock correction)
 function examinerTools(c){const vids=c.clips.filter(k=>k.mp4_file);if(!vids.length)return"";
- return `<div class="grid g2"><div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("doc")}</span></span><div><h3>Sakshilekh</h3><div class="tiny mut">your own finding at the playhead, with the frame captured</div></div></div>
+ return `<div class="grid g2"><div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("doc")}</span></span><div><h3>Examiner findings</h3><div class="tiny mut">your own finding at the playhead, with the frame captured</div></div></div>
   <div class="row" style="flex-wrap:nowrap"><select id="slclip" style="flex:1">${vids.map(k=>`<option value="${esc(k.id)}">${esc(k.label)} · ${esc(k.id)}</option>`).join("")}</select><input id="sldur" type="number" value="5" style="width:80px" title="seconds"></div>
   <textarea id="sltext" rows="2" style="margin-top:8px" placeholder="What you see, in your words"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="slgo">${ico("doc")}Record finding</button><span class="tiny mut" id="slmsg"></span></div></div>
- <div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("film")}</span></span><div><h3>Khandmudra</h3><div class="tiny mut">export an interval as a hashed derivative, no re-encode</div></div></div>
+ <div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("film")}</span></span><div><h3>Segment export</h3><div class="tiny mut">export an interval as a hashed derivative, no re-encode</div></div></div>
   <div class="row" style="flex-wrap:nowrap"><span class="small mut">from playhead −</span><input id="kmb" type="number" value="5" style="width:70px"><span class="small mut">s to +</span><input id="kma" type="number" value="5" style="width:70px"><span class="small mut">s</span></div>
   <input id="kmp" style="margin-top:8px" placeholder="Purpose (e.g. excerpt for the court bundle)"><div class="row" style="margin-top:8px"><button class="btn pri" id="kmgo">${ico("film")}Export segment</button><span class="tiny mut" id="kmmsg"></span></div></div></div>`}
 function bindExaminerTools(c){if(!$("#slgo"))return;const exm=()=>localStorage.exm||c.case.examiner;
  const at=id=>{const k=c.byClip[id],T=window._T;return k&&k.start_ms&&T?Math.max(0,(T-k.start_ms)/1000):0};
  const auto=()=>{const T=window._T;const k=c.clips.find(k=>k.mp4_file&&k.start_ms&&T>=k.start_ms&&T<=k.end_ms);if(k&&$("#slclip").value!==k.id&&document.activeElement!==$("#slclip"))$("#slclip").value=k.id};window._onT=auto;
  $("#slgo").onclick=async()=>{const id=$("#slclip").value,s=at(id);const r=await api(`/api/case/${encodeURIComponent(CDIR)}/notes`,{method:"POST",body:JSON.stringify({clip:id,from_s:s,to_s:s+(+$("#sldur").value||5),text:$("#sltext").value,examiner:exm()})});
-  if(r.error){$("#slmsg").textContent=r.error;return}$("#sltext").value="";$("#slmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id} recorded at ${s.toFixed(1)} s and logged to custody</span>`;toast(`Sakshilekh ${r.id} recorded`)};
+  if(r.error){$("#slmsg").textContent=r.error;return}$("#sltext").value="";$("#slmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id} recorded at ${s.toFixed(1)} s and logged to custody</span>`;toast(`Examiner findings ${r.id} recorded`)};
  $("#kmgo").onclick=async()=>{const id=$("#slclip").value,s=at(id);$("#kmmsg").textContent="Cutting…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/segment`,{method:"POST",body:JSON.stringify({clip:id,from_s:Math.max(0,s-(+$("#kmb").value||5)),to_s:s+(+$("#kma").value||5),purpose:$("#kmp").value,examiner:exm()})});
-  if(r.error){$("#kmmsg").textContent=r.error;return}$("#kmmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id}: ${r.frames} frames, sha256 ${r.sha256.slice(0,12)}…</span> <a href="${window.F(r.file)}" target="_blank">open</a>`;toast(`Khandmudra ${r.id} exported`)}}
+  if(r.error){$("#kmmsg").textContent=r.error;return}$("#kmmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id}: ${r.frames} frames, sha256 ${r.sha256.slice(0,12)}…</span> <a href="${window.F(r.file)}" target="_blank">open</a>`;toast(`Segment export ${r.id} exported`)}}
 async function kaalshodhanCard(c){const box=$("#kaal");if(!box)return;const o=await api(`/api/case/${encodeURIComponent(CDIR)}/offsets`);const cur=o.current||{};
- box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("clock")}</span></span><div><h3>Kaalshodhan</h3><div class="tiny mut">recorder clock against a reference, set by the examiner; recorder times are never rewritten</div></div></div>
+ box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("clock")}</span></span><div><h3>Clock correction</h3><div class="tiny mut">recorder clock against a reference, set by the examiner; recorder times are never rewritten</div></div></div>
  <div class="tblwrap"><table><tr><th>Item</th><th>Current offset</th><th>Basis</th><th>Real-world time of first clip</th><th>Set offset</th></tr>
  ${c.evidence_items.map(e=>{const r=cur[e.id],k=c.clips.find(x=>x.evidence===e.id&&x.start_ms);return `<tr><td><b>${esc(e.id)}</b> · ${esc(e.name)}</td><td class="num">${r?(r.offset_s>0?"+":"")+r.offset_s+" s":"none"}</td><td class="small">${r?esc(r.reason):"—"}</td>
   <td class="mono tiny">${k?`recorder ${hms(k.start_ms)}${r?` → real ${hms(k.start_ms+r.offset_s*1000)}`:""}`:"—"}</td>
   <td><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ko_${e.id}" type="number" step="0.1" placeholder="s" style="width:80px"><input id="kr_${e.id}" placeholder="basis (e.g. vs NTP phone at seizure)" style="min-width:200px"><button class="btn sm" onclick="setKaal('${e.id}')">Save</button></div></td></tr>`}).join("")}</table></div>
  ${o.history.length?`<details style="margin-top:8px"><summary>history (${o.history.length})</summary>${o.history.map(h=>`<div class="tiny">${esc(h.utc)} · ${esc(h.evidence)} ${h.offset_s>0?"+":""}${h.offset_s} s · ${esc(h.reason)} · ${esc(h.examiner)}</div>`).join("")}</details>`:""}`}
 async function setKaal(eid){const r=await api(`/api/case/${encodeURIComponent(CDIR)}/offset`,{method:"POST",body:JSON.stringify({evidence:eid,offset_s:+$("#ko_"+eid).value,reason:$("#kr_"+eid).value,examiner:localStorage.exm||CASE.case.examiner})});
- if(r.error){toast(r.error);return}toast(`Kaalshodhan: ${eid} ${r.offset_s>0?"+":""}${r.offset_s} s logged to custody`);kaalshodhanCard(CASE)}
+ if(r.error){toast(r.error);return}toast(`Clock correction: ${eid} ${r.offset_s>0?"+":""}${r.offset_s} s logged to custody`);kaalshodhanCard(CASE)}
 async function examinerLists(c){const box=$("#exlists");if(!box)return;const [N,S]=await Promise.all([api(`/api/case/${encodeURIComponent(CDIR)}/notes`),api(`/api/case/${encodeURIComponent(CDIR)}/segments`)]);const F=window.F;
- box.innerHTML=`<div class="card"><div class="hd"><h3>Sakshilekh</h3><span class="tiny mut">${N.length} examiner finding(s) · go to Timeline &amp; video to add one</span></div>${N.length?`<div class="cites">${N.map(n=>`<div class="cite" onclick="jump(${n.recorder_from_ms||0})">${n.frame?`<img src="${F(n.frame)}">`:""}<div class="c"><b>${esc(n.id)} · ${esc(n.text)}</b><span class="mono">${n.recorder_from_ms?hmsms(n.recorder_from_ms):n.from_s+" s"}</span><span class="mut">${esc(n.camera||"")}</span><span class="dim">${esc(n.examiner)} · ${esc(n.utc)}</span></div></div>`).join("")}</div>`:`<div class="mut small">None yet.</div>`}</div>
- <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Khandmudra</h3><span class="tiny mut">${S.length} exported segment(s)</span></div>${S.length?`<div class="tblwrap"><table><tr><th>ID</th><th>Camera</th><th>Interval</th><th>Frames</th><th>Purpose</th><th>SHA-256</th><th></th></tr>${S.map(s=>`<tr><td class="mono">${s.id}</td><td class="small">${esc(s.camera||"")}</td><td class="num">${s.asked_from_s.toFixed(1)}–${s.asked_to_s.toFixed(1)} s</td><td class="num">${s.frames}</td><td class="small">${esc(s.purpose)}</td><td class="mono tiny">${s.sha256.slice(0,24)}…</td><td><a class="btn sm" href="${F(s.file)}" target="_blank">Open</a></td></tr>`).join("")}</table></div>`:`<div class="empty">None yet.</div>`}</div>`}
+ box.innerHTML=`<div class="card"><div class="hd"><h3>Examiner findings</h3><span class="tiny mut">${N.length} examiner finding(s) · go to Timeline &amp; video to add one</span></div>${N.length?`<div class="cites">${N.map(n=>`<div class="cite" onclick="jump(${n.recorder_from_ms||0})">${n.frame?`<img src="${F(n.frame)}">`:""}<div class="c"><b>${esc(n.id)} · ${esc(n.text)}</b><span class="mono">${n.recorder_from_ms?hmsms(n.recorder_from_ms):n.from_s+" s"}</span><span class="mut">${esc(n.camera||"")}</span><span class="dim">${esc(n.examiner)} · ${esc(n.utc)}</span></div></div>`).join("")}</div>`:`<div class="mut small">None yet.</div>`}</div>
+ <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Segment export</h3><span class="tiny mut">${S.length} exported segment(s)</span></div>${S.length?`<div class="tblwrap"><table><tr><th>ID</th><th>Camera</th><th>Interval</th><th>Frames</th><th>Purpose</th><th>SHA-256</th><th></th></tr>${S.map(s=>`<tr><td class="mono">${s.id}</td><td class="small">${esc(s.camera||"")}</td><td class="num">${s.asked_from_s.toFixed(1)}–${s.asked_to_s.toFixed(1)} s</td><td class="num">${s.frames}</td><td class="small">${esc(s.purpose)}</td><td class="mono tiny">${s.sha256.slice(0,24)}…</td><td><a class="btn sm" href="${F(s.file)}" target="_blank">Open</a></td></tr>`).join("")}</table></div>`:`<div class="empty">None yet.</div>`}</div>`}
 
 window.addEventListener("hashchange",route);route();
 </script>

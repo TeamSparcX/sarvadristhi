@@ -220,7 +220,7 @@ def test_examiner_records_kanika_and_report(labelled_case):
     r = regenerate_report(labelled_case)
     assert r["ok"] and set(r["hashes"]) >= {"html"}
     html = (labelled_case / "report.html").read_text(encoding="utf-8")
-    assert "Sakshilekh" in html and "Kaalshodhan" in html and "Khandmudra" in html and "report_frames/" in html
+    assert "Examiner findings" in html and "Recorder clock corrections" in html and "Exported segments" in html and "report_frames/" in html
 
 
 def test_kanika_decodes_vendor_headers():

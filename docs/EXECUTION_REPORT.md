@@ -114,13 +114,13 @@ and code search (0 hits each). Test suite: 38 tests, 37 passed, 1 skipped (E01).
 
 | Work | Result |
 |---|---|
-| **Kanikadarpan** frame-to-byte X-ray (`kanika.py`) | Per-frame offsets for every recorder clip from frames.csv; cluster runs for files on removable media; header decode for DHAV, Honeywell record, MPEG-PS/PSM/PES/PTS and H.264/H.265 NAL, checked on OP-2013 and a Honeywell case |
-| **Sakshilekh, Kaalshodhan, Khandmudra** (`examiner.py`) | Examiner findings with captured frames, clock corrections with basis, stream-copy segments with hashes; each a custody entry; chain verifies afterwards |
+| **Frame X-ray** frame-to-byte X-ray (`kanika.py`) | Per-frame offsets for every recorder clip from frames.csv; cluster runs for files on removable media; header decode for DHAV, Honeywell record, MPEG-PS/PSM/PES/PTS and H.264/H.265 NAL, checked on OP-2013 and a Honeywell case |
+| **Examiner findings, Clock correction, Segment export** (`examiner.py`) | Examiner findings with captured frames, clock corrections with basis, stream-copy segments with hashes; each a custody entry; chain verifies afterwards |
 | **Report** | Key frames per camera, examiner findings with frames, corrections, segments and the capsule seal; report hashes returned and logged. Fixed a template crash when a camera's drift is unknown |
-| **Setugrahan** live acquisition as a job | Against the simulated recorder: device identified, clock recorded, two channels downloaded and hashed, analysed, cameras labelled by OCR; the password appears in no file or ledger entry (tested) |
-| **Kasautipeeth** (`kasauti.py`, `sarvadristhi kasauti`) | Rehearsal on the H.265 formatted disk: 119/119 logged seconds on each of three cameras, format event detected; capability cells become "real disk" only from a physical run (tested) |
-| **Maryadapatra** standards map | ISO/IEC 27037, SWGDE 17-V-002 v1.3, NIST CFTT, NIST AI RMF, BSA s.63, DPDP Act; statuses stated without claiming certification |
-| **Nyaydarshika** presentation mode | Ten steps from seizure to verdict with live case facts; keyboard and auto-advance |
+| **Live acquisition** live acquisition as a job | Against the simulated recorder: device identified, clock recorded, two channels downloaded and hashed, analysed, cameras labelled by OCR; the password appears in no file or ledger entry (tested) |
+| **Recorder validation** (`kasauti.py`, `sarvadristhi kasauti`) | Rehearsal on the H.265 formatted disk: 119/119 logged seconds on each of three cameras, format event detected; capability cells become "real disk" only from a physical run (tested) |
+| **Standards** standards map | ISO/IEC 27037, SWGDE 17-V-002 v1.3, NIST CFTT, NIST AI RMF, BSA s.63, DPDP Act; statuses stated without claiming certification |
+| **Presentation** presentation mode | Ten steps from seizure to verdict with live case facts; keyboard and auto-advance |
 | **Real-footage demo disks** (`pramanshala.realdemos`) | MEVA footage in H.265 Hikvision (formatted), H.265 Dahua (overwritten) and Honeywell (overwritten) layouts: 100% recovered, 0 false positives, 100% time; camera 100% / 100% / 99.6% |
 
 ## 5. Next steps, in order

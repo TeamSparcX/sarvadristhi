@@ -18,7 +18,7 @@ def route(source: str) -> str:
 
 
 def live(form: dict, say) -> int:
-    """Setugrahan: pull footage from a running recorder, then analyse what came down."""
+    """Live acquisition: pull footage from a running recorder, then analyse what came down."""
     import os
     from .custody import Ledger
     from .live import acquire_live
@@ -53,7 +53,7 @@ def kasauti(form: dict, say) -> int:
     root = Path(form["case_dir"]).parent
     rep = run(k["image"], Path(k["events"]), Path(form["case_dir"]), k.get("device") or {}, bool(k.get("physical")),
               float(k.get("recorder_offset_s") or 0), form["examiner"], registry=root / ".kasauti", log=say)
-    say(f"Kasautipeeth: mean coverage {rep['mean_coverage']}, logged events detected {rep['events_detected']}")
+    say(f"Recorder validation: mean coverage {rep['mean_coverage']}, logged events detected {rep['events_detected']}")
     say("DONE")
     return 0
 

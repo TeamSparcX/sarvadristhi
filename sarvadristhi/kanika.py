@@ -1,4 +1,4 @@
-"""Kanikadarpan: frame-to-byte X-ray. While a recovered clip plays, the workbench shows where on
+"""Frame X-ray: frame-to-byte X-ray. While a recovered clip plays, the workbench shows where on
 the preserved image each frame's bytes are and decodes the recorder's own header for that frame.
 
 frames(): every frame of a clip with its container offset and length, from the item's frames.csv

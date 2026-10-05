@@ -1,4 +1,4 @@
-"""Kasautipeeth: validate Sarvadristhi on a real recorder against a handwritten event log.
+"""Recorder validation: validate Sarvadristhi on a real recorder against a handwritten event log.
 
 Protocol (printed in the workbench): record on the DVR while writing down what happens and when
 (by a reference clock), note the recorder's clock offset against that reference, delete or format
@@ -107,13 +107,13 @@ def run(image: str, events: Path, out_dir: Path, device: dict, physical: bool, r
     case_dir = out_dir / "case"
     analyse(image, case_dir, f"KASAUTI-{time.strftime('%Y%m%d-%H%M%S')}", examiner or "kasautipeeth", pdf=False, log=log)
     s = score(case_dir, lg)
-    rep = {"kit": "Kasautipeeth 1", "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "image": str(image),
+    rep = {"kit": "Recorder validation 1", "utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "image": str(image),
            "device": device, "physical_recorder": bool(physical), "recorder_offset_s": recorder_offset_s,
            "examiner": examiner, "case_dir": str(case_dir), **s,
            "scope": ("One recording session on one physical device." if physical else
                      "Rehearsal on a modelled image: exercises the kit, says nothing about real hardware.")}
     (out_dir / "kasauti.json").write_text(json.dumps(rep, indent=1), encoding="utf-8")
-    md = [f"# Kasautipeeth validation · {device.get('make', '?')} {device.get('model', '')}".rstrip(),
+    md = [f"# Recorder validation validation · {device.get('make', '?')} {device.get('model', '')}".rstrip(),
           "", f"{'Physical recorder' if physical else 'REHEARSAL on a modelled image'} · {rep['utc']} · detected family "
           f"{s['family']} ({s['confidence']}) · mean coverage {s['mean_coverage']} · logged events detected {s['events_detected']}",
           "", "| Channel | Action | Logged | Verdict | Detail |", "|---|---|---|---|---|"]

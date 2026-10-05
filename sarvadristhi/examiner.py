@@ -1,8 +1,8 @@
 """What the examiner adds to a case, kept apart from machine output and logged to custody:
 
-  Sakshilekh   findings the examiner writes, anchored to a clip interval, with the frame captured
-  Kaalshodhan  examiner clock corrections (recorder clock to real-world time); originals untouched
-  Khandmudra   exported segments: a clip interval cut without re-encoding, hashed, as a labelled derivative
+  Examiner findings   findings the examiner writes, anchored to a clip interval, with the frame captured
+  Clock correction  examiner clock corrections (recorder clock to real-world time); originals untouched
+  Segment export   exported segments: a clip interval cut without re-encoding, hashed, as a labelled derivative
 
 Each record lives in its own JSON file in the case folder and every change is a custody entry, so
 the analysis output (case.json) is never rewritten."""
@@ -52,7 +52,7 @@ def grab_frame(src: Path, at_s: float, dst: Path) -> bool:
     return dst.exists()
 
 
-# ------------------------------------------------------------------ Sakshilekh
+# ------------------------------------------------------------------ Examiner findings
 def add_note(case_dir: Path, clip_id: str, from_s: float, to_s: float, text: str, examiner: str) -> dict:
     case_dir = Path(case_dir)
     text = (text or "").strip()
@@ -80,7 +80,7 @@ def notes(case_dir: Path) -> list:
     return _load(case_dir, "sakshilekh.json")
 
 
-# ------------------------------------------------------------------ Kaalshodhan
+# ------------------------------------------------------------------ Clock correction
 def set_offset(case_dir: Path, evidence: str, offset_s: float, reason: str, examiner: str,
                reference: str = "") -> dict:
     """Recorder clock correction for one evidence item: real-world time = recorder time + offset.
@@ -105,7 +105,7 @@ def offsets(case_dir: Path) -> dict:
     return {"current": cur, "history": rows}
 
 
-# ------------------------------------------------------------------ Khandmudra
+# ------------------------------------------------------------------ Segment export
 def export_segment(case_dir: Path, clip_id: str, from_s: float, to_s: float, purpose: str, examiner: str) -> dict:
     """Cut [from_s, to_s] of a clip without re-encoding. Stream copy starts on a keyframe, so the
     actual start can be earlier than asked; both are recorded."""

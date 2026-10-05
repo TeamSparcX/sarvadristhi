@@ -1,18 +1,18 @@
-"""Anveshan, Avaran and Saakshyapotli: three examiner tools over a finished case.
+"""Person search, Redacted copy and Evidence package: three examiner tools over a finished case.
 
-  Anveshan       find a person across every camera of every evidence item. A chosen person track
+  Person search       find a person across every camera of every evidence item. A chosen person track
                  is joined with its own tracker breaks (same camera, same spot, same clothes) and
                  compared with every other person by clothing colour judged against the case and,
                  when both crops hold the person's own face, by SFace face embeddings. One row per
                  person; RANKED LEADS with every factor shown; a match is never an identification.
-  Avaran         a redacted copy of a clip for disclosure: every tracked person is blurred except
+  Redacted copy         a redacted copy of a clip for disclosure: every tracked person is blurred except
                  the ones the examiner chooses to keep. The original clip is never modified; the
                  redacted file is hashed and logged with its parameters.
-  Saakshyapotli  one sealed evidence package to hand over: report, case data, custody ledgers,
+  Evidence package  one sealed evidence package to hand over: report, case data, custody ledgers,
                  clips, capsule, examiner work and redactions, with a SHA-256 manifest signed by
                  the examiner key (Ed25519). Its hash goes into the custody ledger.
 
-Signatures for Anveshan are computed from the track crops the AI layer already saved and are
+Signatures for Person search are computed from the track crops the AI layer already saved and are
 cached outside the case folder (cases/.cache), so the case itself stays unchanged."""
 import hashlib
 import json
@@ -61,7 +61,7 @@ def _save(case_dir: Path, name: str, rows: list):
     (Path(case_dir) / name).write_text(json.dumps(rows, indent=1), encoding="utf-8")
 
 
-# ======================================================================= Anveshan
+# ======================================================================= Person search
 FACE_RAMP = (0.25, 0.50)   # SFace cosine on small CCTV faces: 0.25 -> no support, 0.50 -> full support
 FACE_DIFFERS = 0.20        # both faces clear and cosine below this: the faces disagree
 LINK_GAP_S, LINK_IOU, LINK_COLOUR = 120, 0.45, 0.60                  # tracker break: same spot, same clothes
@@ -390,7 +390,7 @@ def redactions(case_dir: Path) -> list:
     return _load(case_dir, "avaran.json")
 
 
-# ======================================================================= Saakshyapotli
+# ======================================================================= Evidence package
 PACKAGE_PARTS = ["report.pdf", "report.html", "case.json", "custody.jsonl", "frames.csv", "clips", "evidence",
                  "capsule", "khandmudra", "avaran", "ai/ai.json", "reviews.json", "notes.json", "khandmudra.json",
                  "avaran.json", "offsets.json"]

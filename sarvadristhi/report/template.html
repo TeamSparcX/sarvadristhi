@@ -132,24 +132,24 @@
 <div class="mono">frame sha256 {{ f.sha256 }}<br>clip sha256 {{ f.clip_sha256 }}</div></td>
 {% if loop.index0 % 2 == 1 or loop.last %}</tr>{% endif %}{% endfor %}</tbody></table>{% endif %}
 
-{% if c.sakshilekh %}<h2>7h. Examiner findings (Sakshilekh)</h2>
+{% if c.sakshilekh %}<h2>7h. Examiner findings</h2>
 <p class="muted">Written by the examiner while viewing the footage; separate from machine output. Each finding is anchored to a clip interval and logged to the custody chain.</p>
 {% for n in c.sakshilekh %}<table class="kv" style="margin-bottom:10px"><tr><td>{{ n.id }} · {{ n.camera }}</td><td><b>{{ n.text }}</b></td></tr>
 <tr><td>Interval</td><td>clip {{ n.clip }}, {{ n.from_s }}–{{ n.to_s }} s{% if n.recorder_from_ms %} · recorder time {{ n.recorder_from_ms | ms }}{% endif %}</td></tr>
 <tr><td>Examiner</td><td>{{ n.examiner }} · {{ n.utc }}</td></tr>
 {% if n.frame %}<tr><td>Frame</td><td><img src="{{ n.frame }}" style="width:60%;border:1px solid #ccc"><div class="mono">sha256 {{ n.frame_sha256 }}</div></td></tr>{% endif %}</table>{% endfor %}{% endif %}
 
-{% if c.kaalshodhan %}<h2>7i. Recorder clock corrections (Kaalshodhan)</h2>
+{% if c.kaalshodhan %}<h2>7i. Recorder clock corrections</h2>
 <p class="muted">Real-world time = recorder time + offset. Recorder times elsewhere in this report are unchanged; the newest entry per item applies.</p>
 <table><thead><tr><th>Item</th><th>Offset</th><th>Basis</th><th>Reference</th><th>Examiner · time</th></tr></thead>
 {% for o in c.kaalshodhan %}<tr><td>{{ o.evidence }}</td><td>{{ "%+.3f"|format(o.offset_s) }} s</td><td>{{ o.reason }}</td><td>{{ o.reference }}</td><td>{{ o.examiner }} · {{ o.utc }}</td></tr>{% endfor %}</table>{% endif %}
 
-{% if c.khandmudra %}<h2>7j. Exported segments (Khandmudra)</h2>
+{% if c.khandmudra %}<h2>7j. Exported segments</h2>
 <table><thead><tr><th>ID</th><th>Camera · clip</th><th>Requested</th><th>Frames</th><th>Purpose</th><th>Segment sha256 / source sha256</th></tr></thead>
 {% for s in c.khandmudra %}<tr><td>{{ s.id }}</td><td>{{ s.camera }} · {{ s.clip }}</td><td>{{ s.asked_from_s }}–{{ s.asked_to_s }} s</td><td>{{ s.frames }}</td><td>{{ s.purpose }}</td><td class="mono">{{ s.sha256 }}<br>{{ s.source_mp4_sha256 }}</td></tr>{% endfor %}</table>
 <p class="muted">Cut by stream copy without re-encoding; a segment starts at the nearest earlier keyframe.</p>{% endif %}
 
-{% if c.punarnirmiti %}<h2>7k. Replay capsule (Punarnirmiti)</h2>
+{% if c.punarnirmiti %}<h2>7k. Replay capsule</h2>
 <p>A signed capsule lists the byte ranges of the preserved images behind all {{ c.punarnirmiti.clips }} recovered clip(s) ({{ "{:,}".format(c.punarnirmiti.ranges) }} ranges). Any reviewer holding the capsule and the images can rebuild each clip and compare hashes without this software's parsers.</p>
 <table class="kv"><tr><td>Sealed</td><td>{{ c.punarnirmiti.created_utc }}</td></tr><tr><td>Ed25519 key fingerprint</td><td class="mono">{{ c.punarnirmiti.key_fingerprint }}</td></tr>
 <tr><td>Signature at report time</td><td>{{ "valid" if c.punarnirmiti.signature_ok else "INVALID" }}</td></tr></table>{% endif %}
