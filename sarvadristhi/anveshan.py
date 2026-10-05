@@ -1,9 +1,10 @@
 """Anveshan, Avaran and Saakshyapotli: three examiner tools over a finished case.
 
   Anveshan       find a person across every camera of every evidence item. A chosen person track
-                 is compared with all other person tracks by clothing-colour signatures and, when
-                 both crops show a face, by SFace face embeddings. Results are RANKED LEADS with
-                 every factor shown; a match is never an identification.
+                 is joined with its own tracker breaks (same camera, same spot, same clothes) and
+                 compared with every other person by clothing colour judged against the case and,
+                 when both crops hold the person's own face, by SFace face embeddings. One row per
+                 person; RANKED LEADS with every factor shown; a match is never an identification.
   Avaran         a redacted copy of a clip for disclosure: every tracked person is blurred except
                  the ones the examiner chooses to keep. The original clip is never modified; the
                  redacted file is hashed and logged with its parameters.
@@ -61,12 +62,32 @@ def _save(case_dir: Path, name: str, rows: list):
 
 
 # ======================================================================= Anveshan
+FACE_RAMP = (0.25, 0.50)   # SFace cosine on small CCTV faces: 0.25 -> no support, 0.50 -> full support
+FACE_DIFFERS = 0.20        # both faces clear and cosine below this: the faces disagree
+LINK_GAP_S, LINK_IOU, LINK_COLOUR = 120, 0.45, 0.60                  # tracker break: same spot, same clothes
+LINK_LONG_GAP_S, LINK_LONG_IOU, LINK_LONG_COLOUR = 900, 0.60, 0.75   # next clip, still in the same seat
+
+
+def _own_face(img, faces):
+    """The face that belongs to the person of this crop, or None. A crop of someone in a crowd often
+    contains a neighbour's face; only a face centred near the top of the crop is this person's."""
+    h, w = img.shape[:2]
+    best = None
+    for f in faces(cv2.resize(img, (w * 3, h * 3), interpolation=cv2.INTER_CUBIC)):
+        x0, y0, x1, y1 = [v / 3 for v in f["box"]]
+        cx, cy = (x0 + x1) / 2 / w, (y0 + y1) / 2 / h
+        if f["conf"] >= 0.8 and cy <= 0.4 and 0.2 <= cx <= 0.8 and x1 - x0 >= 14:
+            if best is None or f["conf"] > best["conf"]:
+                best = {"conf": f["conf"], "px": round(x1 - x0), "emb": f["embedding"]}
+    return best
+
+
 def _signatures(case_dir: Path, tracks: list[dict]) -> dict:
-    """track id -> {upper, lower histograms, face embedding or None}, cached per ai.json version."""
+    """track id -> {upper, lower histograms, owned face embedding or None}, cached per ai.json version."""
     from .ai import perception
     case_dir = Path(case_dir)
     ai_sha = _sha(case_dir / "ai" / "ai.json")[:16]
-    cache = case_dir.parent / ".cache" / f"anveshan_{case_dir.name}_{ai_sha}.npz"
+    cache = case_dir.parent / ".cache" / f"anveshan2_{case_dir.name}_{ai_sha}.npz"
     if cache.exists():
         z = np.load(cache, allow_pickle=True)
         return z["sigs"].item()
@@ -80,14 +101,10 @@ def _signatures(case_dir: Path, tracks: list[dict]) -> dict:
         a = perception.appearance(img, [min(12, w // 6), min(12, h // 8), w - min(12, w // 6), h - min(12, h // 8)])
         if not a:
             continue
-        emb = None
-        if faces.ok:                         # faces are small in CCTV crops: upscale before detecting
-            big = cv2.resize(img, (w * 3, h * 3), interpolation=cv2.INTER_CUBIC)
-            fs = faces(big)
-            if fs:
-                emb = max(fs, key=lambda f: f["conf"])["embedding"]
+        f = _own_face(img, faces) if faces.ok else None
+        emb = None if f is None else f["emb"] / (np.linalg.norm(f["emb"]) + 1e-9)
         sigs[t["id"]] = {"upper": a["upper"], "lower": a["lower"], "upper_colour": a["upper_colour"],
-                         "lower_colour": a["lower_colour"], "face": emb}
+                         "lower_colour": a["lower_colour"], "face": emb, "face_px": f and f["px"]}
     cache.parent.mkdir(parents=True, exist_ok=True)
     np.savez(cache, sigs=np.array(sigs, dtype=object))
     return sigs
@@ -97,71 +114,187 @@ def _hist(a, b) -> float:
     return max(0.0, float(cv2.compareHist(a.astype(np.float32), b.astype(np.float32), cv2.HISTCMP_CORREL)))
 
 
-def search(case_dir: Path, track_id: str, limit: int = 24) -> dict:
-    """Rank every other person track of the case by similarity to `track_id`."""
-    case_dir = Path(case_dir)
+def _colour(a, b) -> float:
+    return 0.6 * _hist(a["upper"], b["upper"]) + 0.4 * _hist(a["lower"], b["lower"])
+
+
+def _cos(a, b):
+    return None if a["face"] is None or b["face"] is None else float(np.dot(a["face"], b["face"]))
+
+
+def _iou(a, b) -> float:
+    x0, y0, x1, y1 = max(a[0], b[0]), max(a[1], b[1]), min(a[2], b[2]), min(a[3], b[3])
+    i = max(0, x1 - x0) * max(0, y1 - y0)
+    u = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - i
+    return i / u if u > 0 else 0.0
+
+
+def _same_shape(a, b) -> bool:
+    """A seated person and someone walking through the same spot have very different boxes."""
+    wa, ha, wb, hb = a[2] - a[0], a[3] - a[1], b[2] - b[0], b[3] - b[1]
+    if min(wa, ha, wb, hb) <= 0:
+        return False
+    area, aspect = (wa * ha) / (wb * hb), (wa / ha) / (wb / hb)
+    return 0.6 <= area <= 1 / 0.6 and 1 / 1.4 <= aspect <= 1.4
+
+
+def _chains(tracks: list[dict], sigs: dict):
+    """Join tracker breaks: on one camera, a track that starts where another ended, in the same clothes,
+    is the same person continued. Each track gets at most one predecessor and one successor (nearest
+    in time and place first), so a crowd does not collapse into one chain. Returns (track -> chain id, links)."""
+    pairs = []
+    for a in tracks:
+        for b in tracks:
+            if a is b or a["channel_name"] != b["channel_name"] or a.get("frame_size") != b.get("frame_size"):
+                continue
+            gap = (b["abs_start_ms"] - a["abs_end_ms"]) / 1000
+            if gap < -1 or gap > LINK_LONG_GAP_S or a["id"] not in sigs or b["id"] not in sigs:
+                continue
+            # the join must be shape-consistent, and each side must still be the person of its own crop
+            # (a track whose entry or exit box differs from its best box is an identity switch: never joined)
+            if not (_same_shape(a["exit_box"], b["entry_box"]) and _same_shape(a["best_box"], a["exit_box"])
+                    and _same_shape(b["entry_box"], b["best_box"])):
+                continue
+            iou, col = _iou(a["exit_box"], b["entry_box"]), _colour(sigs[a["id"]], sigs[b["id"]])
+            cos = _cos(sigs[a["id"]], sigs[b["id"]])
+            if cos is not None and cos < FACE_DIFFERS:
+                continue
+            if (gap <= LINK_GAP_S and iou >= LINK_IOU and col >= LINK_COLOUR) or \
+               (iou >= LINK_LONG_IOU and col >= LINK_LONG_COLOUR):
+                pairs.append((max(0.0, gap) / LINK_GAP_S + (1 - iou), iou, a["id"], b["id"], round(gap, 1), round(col, 2)))
+    succ, pred, links = {}, {}, []
+    for _, iou, a, b, gap, col in sorted(pairs):
+        if a in succ or b in pred:
+            continue
+        succ[a], pred[b] = b, a
+        links.append({"from": a, "to": b, "gap_s": gap, "overlap": round(iou, 2), "colour": col})
+    chain = {}
+    for t in tracks:
+        if t["id"] in pred:
+            continue
+        x = t["id"]
+        while x is not None and x not in chain:
+            chain[x] = t["id"]
+            x = succ.get(x)
+    for t in tracks:                       # (cycles are impossible: time only moves forward)
+        chain.setdefault(t["id"], t["id"])
+    return chain, links
+
+
+def _person(case_dir: Path):
     ai = _ai(case_dir)
     tracks = [t for t in ai["layers"]["L2"]["tracks"] if t["cls"] == "person"]
+    sigs = _signatures(case_dir, tracks)
+    chain, links = _chains(tracks, sigs)
+    groups = {}
+    for t in tracks:
+        groups.setdefault(chain[t["id"]], []).append(t)
+    for g in groups.values():
+        g.sort(key=lambda t: t["abs_start_ms"])
+    return ai, tracks, sigs, chain, links, groups
+
+
+def _rep(members: list[dict], sigs: dict) -> dict:
+    """The member to show for a person: a clear face first, then the longest, most confident track."""
+    return max(members, key=lambda t: (sigs.get(t["id"], {}).get("face") is not None, t["observations"] * t["max_conf"]))
+
+
+def search(case_dir: Path, track_id: str, limit: int = 24) -> dict:
+    """Rank every other person in the case by similarity to the person of `track_id`."""
+    case_dir = Path(case_dir)
+    ai, tracks, sigs, chain, links, groups = _person(case_dir)
     by_id = {t["id"]: t for t in tracks}
     if track_id not in by_id:
         raise ValueError(f"no person track {track_id}")
-    sigs = _signatures(case_dir, tracks)
-    q, qs = by_id[track_id], sigs.get(track_id)
-    if not qs:
+    subj = [t for t in groups[chain[track_id]] if t["id"] in sigs]
+    if not subj:
         raise ValueError("this track's crop is too small to compare")
+    sub_ids = {t["id"] for t in subj}
     entity_of = {t: e["id"] for e in ai["layers"]["L4"].get("entities", []) for t in e["tracks"]}
-    out, excluded = [], 0
+    sub_entities = {entity_of.get(i) for i in sub_ids} - {None}
+    rows, excluded = [], 0
     for t in tracks:
-        if t["id"] == track_id or t["id"] not in sigs:
+        if t["id"] in sub_ids or t["id"] not in sigs:
             continue
-        s = sigs[t["id"]]
         # one person cannot be two tracks on the same camera at the same time
-        if t["channel_name"] == q["channel_name"] and t["abs_start_ms"] < q["abs_end_ms"] and q["abs_start_ms"] < t["abs_end_ms"]:
+        if any(t["channel_name"] == q["channel_name"] and t["abs_start_ms"] < q["abs_end_ms"] and
+               q["abs_start_ms"] < t["abs_end_ms"] for q in subj):
             excluded += 1
             continue
-        up, lo = _hist(qs["upper"], s["upper"]), _hist(qs["lower"], s["lower"])
-        app = 0.6 * up + 0.4 * lo
-        factors = [{"factor": "upper clothing colour", "value": round(up, 2),
-                    "why": f"{qs['upper_colour']} vs {s['upper_colour']}"},
-                   {"factor": "lower clothing colour", "value": round(lo, 2),
-                    "why": f"{qs['lower_colour']} vs {s['lower_colour']}"}]
-        if qs["face"] is not None and s["face"] is not None:
-            cos = float(np.dot(qs["face"], s["face"]) / (np.linalg.norm(qs["face"]) * np.linalg.norm(s["face"]) + 1e-9))
-            fv = float(np.clip((cos - 0.10) / (FACE_SAME - 0.10), 0, 1))
+        s = sigs[t["id"]]
+        qs = sigs[max(subj, key=lambda q: _colour(sigs[q["id"]], s))["id"]]
+        cosines = [(c, q) for q in subj if (c := _cos(sigs[q["id"]], s)) is not None]
+        rows.append({"t": t, "s": s, "qs": qs, "col": _colour(qs, s), "up": _hist(qs["upper"], s["upper"]),
+                     "lo": _hist(qs["lower"], s["lower"]), "face": max(cosines, key=lambda x: x[0]) if cosines else None})
+    # colour is judged against the case: matching "black / black" in a lobby full of black coats says little
+    base = float(np.median([r["col"] for r in rows])) if rows else 0.0
+    best = {}
+    for r in rows:
+        t, s, qs = r["t"], r["s"], r["qs"]
+        lift = float(np.clip((r["col"] - base) / max(1e-6, 1 - base), 0, 1))
+        factors = [{"factor": "upper clothing colour", "value": round(r["up"], 2), "why": f"{qs['upper_colour']} vs {s['upper_colour']}"},
+                   {"factor": "lower clothing colour", "value": round(r["lo"], 2), "why": f"{qs['lower_colour']} vs {s['lower_colour']}"},
+                   {"factor": "colour vs a typical person", "value": round(lift, 2),
+                    "why": f"colour {r['col']:.2f} against a case median of {base:.2f}"}]
+        if r["face"] is not None:
+            cos, fq = r["face"]
+            fv = float(np.clip((cos - FACE_RAMP[0]) / (FACE_RAMP[1] - FACE_RAMP[0]), 0, 1))
             factors.append({"factor": "face (SFace cosine)", "value": round(fv, 2),
-                            "why": f"cosine {cos:.3f}; same-person threshold {FACE_SAME}"})
-            score = 0.55 * fv + 0.45 * app
+                            "why": f"cosine {cos:.3f} on {sigs[fq['id']]['face_px']} px and {s['face_px']} px faces "
+                                   f"(0.25 = no support, 0.50 = full)"})
+            score = 0.6 * fv + 0.4 * lift
+            if cos < FACE_DIFFERS:
+                score *= 0.5
+            band = "strong lead" if score >= 0.75 and cos >= FACE_SAME else "possible" if score >= 0.55 else "weak"
         else:
-            factors.append({"factor": "face", "value": None, "why": "no face visible in both crops"})
-            score = app
-        band = "strong lead" if score >= 0.75 else "possible" if score >= 0.6 else "weak"
-        out.append({"track": t["id"], "clip": t["clip"], "camera": t["channel_name"], "score": round(score, 3),
-                    "band": band, "factors": factors, "from_ms": t["abs_start_ms"], "to_ms": t["abs_end_ms"],
-                    "best_ms": t["abs_best_ms"], "crop": t["crop"], "thumb": t["thumb"],
-                    "same_l4_entity": entity_of.get(t["id"]) is not None and entity_of.get(t["id"]) == entity_of.get(track_id)})
+            factors.append({"factor": "face", "value": None, "why": "no clear face of this person in both crops"})
+            score = 0.85 * lift              # colour alone is never a strong lead
+            band = "possible" if score >= 0.55 else "weak"
+        g = chain[t["id"]]
+        if g not in best or score > best[g]["score"]:
+            best[g] = {"track": t["id"], "clip": t["clip"], "camera": t["channel_name"], "score": round(score, 3),
+                       "band": band, "factors": factors, "from_ms": t["abs_start_ms"], "to_ms": t["abs_end_ms"],
+                       "best_ms": t["abs_best_ms"], "crop": t["crop"], "thumb": t["thumb"],
+                       "same_l4_entity": bool(sub_entities) and any(entity_of.get(m["id"]) in sub_entities for m in groups[g])}
+    out = []
+    for g, r in best.items():
+        r["person_tracks"] = [{"track": m["id"], "from_ms": m["abs_start_ms"], "to_ms": m["abs_end_ms"]} for m in groups[g]]
+        out.append(r)
     out.sort(key=lambda r: -r["score"])
-    return {"query": {"track": track_id, "camera": q["channel_name"], "from_ms": q["abs_start_ms"],
-                      "to_ms": q["abs_end_ms"], "crop": q["crop"], "upper_colour": qs["upper_colour"],
-                      "lower_colour": qs["lower_colour"], "face": qs["face"] is not None},
-            "results": out[:limit], "compared": len(out), "excluded_same_camera_same_time": excluded,
+    rep = _rep(subj, sigs)
+    qs = sigs[rep["id"]]
+    return {"query": {"track": track_id, "shown": rep["id"], "camera": rep["channel_name"],
+                      "from_ms": subj[0]["abs_start_ms"], "to_ms": max(t["abs_end_ms"] for t in subj), "crop": rep["crop"],
+                      "upper_colour": qs["upper_colour"], "lower_colour": qs["lower_colour"],
+                      "face": any(sigs[t["id"]]["face"] is not None for t in subj),
+                      "members": [{"track": t["id"], "clip": t["clip"], "from_ms": t["abs_start_ms"], "to_ms": t["abs_end_ms"]} for t in subj],
+                      "links": [l for l in links if l["from"] in sub_ids]},
+            "results": out[:limit], "compared": len(out), "compared_tracks": len(rows),
+            "excluded_same_camera_same_time": excluded, "colour_baseline": round(base, 2),
             "cameras": sorted({r["camera"] for r in out[:limit] if r["band"] != "weak"}),
-            "method": "clothing-colour histograms (upper 0.6, lower 0.4) and, when both crops show a face, "
-                      "SFace cosine (face 0.55, colour 0.45); same camera at the same time excluded",
+            "method": "one row per person (tracker breaks on one camera joined: same spot, same clothes). Clothing colour "
+                      "(upper 0.6, lower 0.4) judged against the case median; where both crops hold the person's own "
+                      "face, SFace cosine (face 0.6, colour 0.4). Colour alone is at most a possible lead. Same camera "
+                      "at the same time excluded.",
             "disclaimer": DISCLAIMER}
 
 
 def candidates(case_dir: Path, limit: int = 48) -> list[dict]:
-    """The strongest person tracks, to pick a subject from."""
-    ai = _ai(case_dir)
-    ts = [t for t in ai["layers"]["L2"]["tracks"] if t["cls"] == "person"]
-    ts.sort(key=lambda t: -(t["observations"] * t["max_conf"]))
-    return [{"track": t["id"], "camera": t["channel_name"], "clip": t["clip"], "crop": t["crop"],
-             "from_ms": t["abs_start_ms"], "to_ms": t["abs_end_ms"], "observations": t["observations"],
-             "colours": f"{t.get('upper_colour') or '?'} / {t.get('lower_colour') or '?'}",
-             "face": bool((t.get("face") or {}).get("found"))} for t in ts[:limit]]
+    """One entry per person (tracker breaks joined), strongest first, to pick a subject from."""
+    ai, tracks, sigs, chain, links, groups = _person(case_dir)
+    people = [ms for ms in groups.values() if any(m["id"] in sigs for m in ms)]
+    people.sort(key=lambda ms: -sum(m["observations"] * m["max_conf"] for m in ms))
+    out = []
+    for ms in people[:limit]:
+        r = _rep([m for m in ms if m["id"] in sigs], sigs)
+        s = sigs[r["id"]]
+        out.append({"track": r["id"], "camera": r["channel_name"], "clip": r["clip"], "crop": r["crop"],
+                    "from_ms": ms[0]["abs_start_ms"], "to_ms": max(m["abs_end_ms"] for m in ms),
+                    "observations": sum(m["observations"] for m in ms), "tracks": len(ms), "members": [m["id"] for m in ms],
+                    "colours": f"{s['upper_colour']} / {s['lower_colour']}", "face": s["face"] is not None})
+    return out
 
 
-# ======================================================================= Avaran
 def _boxes_at(samples: list, t: float, pad: float = 0.15):
     """Interpolated box of one track at time t from its (t, box) samples; None outside its span."""
     if t < samples[0][0] - 0.3 or t > samples[-1][0] + 0.3:
