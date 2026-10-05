@@ -1,0 +1,62 @@
+{
+ "as_of": "2026-10-05",
+ "levels": {
+  "real": "Validated on a physical recorder disk with ground truth",
+  "synthetic": "Validated on modelled images (real video in the vendor layout, built by pramanshala)",
+  "via": "Handled by another family's parser because the format is shared; verify per model",
+  "universal": "Vendor-neutral path: H.264 carving, overlay OCR, sensor fingerprint",
+  "none": "Not supported in this version"
+ },
+ "trust": {
+  "L0": "No published source; nothing vendor-specific implemented",
+  "L1": "One published source read in full",
+  "L2": "Two or more independent sources agree",
+  "L3": "Confirmed on a real recorder disk"
+ },
+ "functions": [
+  ["detect", "Identify format"],
+  ["index", "Parse index"],
+  ["logs", "Recorder log"],
+  ["recover", "Deleted / formatted"],
+  ["time", "Recorder timestamps"],
+  ["h264", "H.264"],
+  ["h265", "H.265"]
+ ],
+ "oems": [
+  {"oem": "Hikvision", "family": "hikvision", "trust": "L1", "share_india": "high",
+   "cells": {"detect": "synthetic", "index": "synthetic", "logs": "synthetic", "recover": "synthetic", "time": "synthetic", "h264": "synthetic", "h265": "synthetic"},
+   "sources": ["Han, Jeong & Lee, ICDF2C 2015", "akira7799/hikvision-dvr-parser (MIT, from a real DVR, firmware HIK.2011.03.08)"],
+   "note": "Master sector, HIKBTREE (primary + backup), RATS system log, per-block OFNI keyframe tables."},
+  {"oem": "Dahua", "family": "dahua-dhav", "trust": "L2", "share_india": "high",
+   "cells": {"detect": "synthetic", "index": "none", "logs": "none", "recover": "synthetic", "time": "synthetic", "h264": "synthetic", "h265": "synthetic"},
+   "sources": ["FFmpeg libavformat/dhav.c", "Rzayeva et al., MDPI Information 2025 (27 drives)"],
+   "note": "DHAV frames with header/footer agreement; recorder time in every frame. DHFS 4.1 index not parsed yet."},
+  {"oem": "CP Plus", "family": "dahua-dhav", "trust": "L1", "share_india": "high",
+   "cells": {"detect": "via", "index": "none", "logs": "none", "recover": "via", "time": "via", "h264": "via", "h265": "via"},
+   "sources": ["Listed as a Dahua OEM (SecurityCamCenter, IPVM directories)"],
+   "note": "Handled by the Dahua family when the disk carries DHAV structures. Brand label alone never decides."},
+  {"oem": "Honeywell", "family": "honeywell", "trust": "L1", "share_india": "medium",
+   "cells": {"detect": "synthetic", "index": "none", "logs": "none", "recover": "synthetic", "time": "synthetic", "h264": "synthetic", "h265": "synthetic"},
+   "sources": ["Yoon & Hwang, DFRWS USA 2026 (arXiv 2605.07430), section 5.4.6, read in full", "Giri, Yoon & Hwang, CARVE, DFRWS APAC 2026"],
+   "note": "20-byte record headers with microsecond recorder time, found by structure (survives formatting). Channel list not parsed: camera from overlay OCR. Known-answer check passes on the paper's own sample timestamp."},
+  {"oem": "TP-Link VIGI", "family": "unknown", "trust": "L0", "share_india": "growing",
+   "cells": {"detect": "universal", "index": "none", "logs": "none", "recover": "universal", "time": "universal", "h264": "universal", "h265": "universal"},
+   "sources": [], "note": "No public on-disk documentation found. Needs one real unit."},
+  {"oem": "Uniview", "family": "unknown", "trust": "L0", "share_india": "medium",
+   "cells": {"detect": "universal", "index": "none", "logs": "none", "recover": "universal", "time": "universal", "h264": "universal", "h265": "universal"},
+   "sources": [], "note": "No public on-disk documentation found. Needs one real unit."},
+  {"oem": "Matrix", "family": "unknown", "trust": "L0", "share_india": "medium",
+   "cells": {"detect": "universal", "index": "none", "logs": "none", "recover": "universal", "time": "universal", "h264": "universal", "h265": "universal"},
+   "sources": [], "note": "Indian OEM (Vadodara). Request a unit for validation."},
+  {"oem": "Godrej", "family": "unknown", "trust": "L0", "share_india": "medium",
+   "cells": {"detect": "universal", "index": "none", "logs": "none", "recover": "universal", "time": "universal", "h264": "universal", "h265": "universal"},
+   "sources": [], "note": "OEM source unknown; family detection decides if it writes Hikvision or Dahua structures."},
+  {"oem": "Any other recorder", "family": "unknown", "trust": "L0", "share_india": "",
+   "cells": {"detect": "universal", "index": "none", "logs": "none", "recover": "universal", "time": "universal", "h264": "universal", "h265": "universal"},
+   "sources": ["ISO/IEC 14496-10 (H.264) Annex B"], "note": "Camera and time from the burned-in overlay (OCR) or the sensor-noise fingerprint."}
+ ],
+ "media": [
+  {"name": "USB / SD card (NTFS, FAT, exFAT)", "level": "external tool, widely validated", "basis": "The Sleuth Kit (pytsk3); NTFS change journal for deletion times"},
+  {"name": "Export files (.mp4, .dav, .avi, folders)", "level": "synthetic", "basis": "Frame-level provenance against recorder footage"}
+ ]
+}

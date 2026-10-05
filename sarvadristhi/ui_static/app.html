@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sarvadristhi Forensic Workbench</title>
+<script src="/static/vendor/d3.v7.min.js"></script>
+<style>
+/* Sarvadristhi light workbench. Layout: fixed sidebar + top bar + scrolling content; proof inspector slides in from the right.
+   Surfaces are tinted sage greys (never flat white everywhere); one deep-green ink panel per screen carries the verdict. */
+:root{
+ --canvas:#eceee8;--side:#f6f7f3;--card:#ffffff;--sunk:#f3f4ef;--tint:#e4efe7;--hover:#eef1ea;
+ --ink:#111513;--ink2:#353c37;--mut:#69716a;--dim:#949b94;--line:#dde1d9;--line2:#c8cec5;
+ --deep:#122019;--deep2:#1a2b22;--deepfg:#eef6f0;--deepmut:#9db3a5;--mint:#7fe3a6;--mint2:#4fc985;--mint3:#2f9e64;
+ --acc:#14704d;--acc-bg:#e2f1e8;
+ --ok:#1b7f4f;--ok-bg:#e1f2e7;--warn:#b0620b;--warn-bg:#fcefd9;--crit:#c3352b;--crit-bg:#fbe6e3;--info:#2f62c9;--info-bg:#e6edfb;--lead:#6b48d0;--lead-bg:#eee9fb;
+ --idx:#1f9d61;--carv:#d98a0b;--cont:#d4467b;--meta:#3b6fd8;--del:#d23f31;--live:#8a948c;--empty:#e6e9e2;
+ --l1:#0e9488;--l2:#3b6fd8;--l3:#7a4fd8;--l4:#e07b16;
+ --r:12px;--r2:9px;
+ --sans:"Segoe UI Variable Text","Segoe UI Variable","Segoe UI",system-ui,-apple-system,sans-serif;
+ --disp:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+ --mono:"Cascadia Mono","Cascadia Code",Consolas,ui-monospace,monospace;
+ color-scheme:light}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:13.5px/1.5 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.mono{font-family:var(--mono);font-size:12px}.mut{color:var(--mut)}.dim{color:var(--dim)}.small{font-size:12.5px}.tiny{font-size:11.5px}.num{font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0;font-family:var(--disp);text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:30px;font-weight:650;line-height:1.15}h2{font-size:20px;font-weight:650}h3{font-size:15px;font-weight:650}
+.eyebrow{font:600 11px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.sp{flex:1}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:12px}
+
+/* shell */
+.shell{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100%}
+.side{background:var(--side);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:18px 12px 14px;gap:16px;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px;text-decoration:none}
+.brand .mk{width:30px;height:30px;border-radius:8px;background:var(--deep);display:grid;place-items:center;flex:none}
+.brand b{font:700 16px/1.1 var(--disp);display:block}.brand small{font-size:11px;color:var(--mut)}
+.navh{font:600 10.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);padding:0 10px;margin:4px 0 -6px}
+.nav{display:flex;flex-direction:column;gap:1px}
+.nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;text-decoration:none;color:var(--ink2);font-weight:500}
+.nav a:hover{background:var(--hover)}.nav a.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(17,21,19,.05)}
+.nav a.on svg{color:var(--acc)}.nav svg{width:16px;height:16px;flex:none;color:var(--mut)}
+.nav .cnt{margin-left:auto;font:600 10.5px/1 var(--mono);padding:3px 6px;border-radius:5px;background:var(--crit-bg);color:var(--crit)}
+.nav .cnt.ok{background:var(--ok-bg);color:var(--ok)}.nav .cnt.n{background:var(--sunk);color:var(--mut);box-shadow:inset 0 0 0 1px var(--line)}
+.sidefoot{margin-top:auto;border-top:1px solid var(--line);padding:12px 8px 0;display:grid;gap:8px;font-size:11.5px;color:var(--mut)}
+.sidefoot b{display:block;color:var(--ink);font:500 11.5px var(--mono)}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:10px 24px;background:rgba(236,238,232,.86);backdrop-filter:saturate(1.2) blur(10px);border-bottom:1px solid var(--line);min-height:56px;flex-wrap:wrap}
+.crumb{color:var(--mut);font-size:13px}.crumb b{color:var(--ink);font-weight:600}.crumb a{text-decoration:none}.crumb a:hover{color:var(--ink)}
+.page{padding:22px 24px 60px;display:flex;flex-direction:column;gap:16px;max-width:1500px;width:100%}
+
+/* primitives */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.card.flat{background:var(--sunk)}.card.pad0{padding:0;overflow:hidden}
+.card>.hd{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 13px;font-weight:600;font-size:12.5px;cursor:pointer;text-decoration:none;white-space:nowrap;line-height:1.1}
+.btn:hover{background:var(--hover)}.btn:disabled{opacity:.5;cursor:default}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:#fff}.btn.pri:hover{background:#262c28}
+.btn.mint{background:var(--mint);border-color:var(--mint);color:var(--deep)}.btn.mint:hover{background:#9aeebb}
+.btn.ghostd{background:transparent;border-color:rgba(255,255,255,.22);color:var(--deepfg)}.btn.ghostd:hover{background:rgba(255,255,255,.08)}
+.btn.sm{padding:5px 10px;font-size:12px}.btn svg{width:14px;height:14px}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:7px;padding:4px 9px;font-size:12px;font-weight:500;white-space:nowrap;color:var(--ink2)}
+.pill .dot,.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:3px 8px;font-size:11.5px;font-weight:600;white-space:nowrap;line-height:1.3}
+.c-ok{background:var(--ok-bg);color:var(--ok)}.c-warn{background:var(--warn-bg);color:var(--warn)}.c-crit{background:var(--crit-bg);color:var(--crit)}
+.c-info{background:var(--info-bg);color:var(--info)}.c-lead{background:var(--lead-bg);color:var(--lead)}.c-n{background:var(--sunk);color:var(--mut);box-shadow:inset 0 0 0 1px var(--line)}
+.c-ink{background:var(--ink);color:#fff}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1180px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.shell{grid-template-columns:1fr}.side{position:static;height:auto}.page{padding:16px}}
+table{width:100%;border-collapse:collapse}th{font:600 10.5px/1.2 var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--hover)}tr.del td{background:#fdf3f1}
+.tblwrap{overflow-x:auto}
+input,select,textarea{background:var(--card);color:var(--ink);border:1px solid var(--line2);border-radius:8px;padding:9px 11px;width:100%;font:inherit;font-size:13px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-bg)}
+label.lb{font-size:12px;font-weight:600;color:var(--ink2);display:block;margin:12px 0 5px}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px;overflow:auto;max-height:280px;white-space:pre-wrap;font:11.5px/1.5 var(--mono);margin:6px 0;color:var(--ink2)}
+details summary{cursor:pointer;color:var(--acc);font-size:12px;font-weight:600;margin:4px 0}
+.kv{display:grid;grid-template-columns:130px 1fr;gap:5px 12px;font-size:12.5px}.kv>div:nth-child(odd){color:var(--mut)}
+.sw{width:10px;height:10px;border-radius:3px;flex:none;display:inline-block}
+.bar{height:8px;border-radius:4px;background:var(--sunk);display:flex;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}.bar span{display:block;height:100%}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--mut)}.leg span{display:inline-flex;align-items:center;gap:6px}
+.sev{width:4px;border-radius:2px;align-self:stretch;flex:none}
+.empty{padding:28px;text-align:center;color:var(--mut)}
+.note{font-size:12px;color:var(--mut);max-width:80ch}
+.banner{display:flex;gap:10px;align-items:flex-start;border-radius:10px;padding:10px 14px;font-size:12.5px;background:var(--warn-bg);color:#7a4507}
+.banner.info{background:var(--info-bg);color:#1f448f}
+
+/* deep panels: hero, verdict */
+.hero{background:var(--deep);color:var(--deepfg);border-radius:16px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);overflow:hidden;position:relative;min-height:300px}
+.hero .art{position:relative;min-height:280px}.hero .art svg{position:absolute;inset:0;width:100%;height:100%}
+.hero .txt{padding:34px 36px 30px 8px;display:flex;flex-direction:column;gap:14px;justify-content:center;position:relative;z-index:1}
+.hero h1{color:#fff;font-size:34px}.hero p{color:var(--deepmut);margin:0;max-width:52ch}
+.hero .bul{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--deepfg)}.hero .bul span{display:inline-flex;align-items:center;gap:7px}.hero .bul .dot{color:var(--mint)}
+@media(max-width:980px){.hero{grid-template-columns:1fr}.hero .txt{padding:8px 24px 26px}}
+.verdict{background:var(--deep);color:var(--deepfg);border-radius:var(--r);display:flex;flex-direction:column;overflow:hidden}
+.verdict .r{display:flex;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid rgba(255,255,255,.07)}
+.verdict .r:last-child{border-bottom:0}.verdict .l{font-size:12px;color:var(--deepmut)}
+.verdict .v{font:650 24px/1.15 var(--disp);color:#fff;font-variant-numeric:tabular-nums}.verdict .v small{font:500 12px var(--sans);color:var(--deepmut);margin-left:6px}
+.verdict .ic{margin-left:auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(127,227,166,.12);color:var(--mint)}
+.verdict .ic.bad{background:rgba(255,120,100,.15);color:#ff8f80}.verdict .ic svg{width:16px;height:16px}
+
+/* features + case cards */
+.feat{display:flex;flex-direction:column;gap:8px;text-decoration:none;transition:border-color .12s}
+.feat:hover{border-color:var(--line2)}.feat .h{display:flex;align-items:center;gap:10px;font-weight:650;font-size:14px}
+.feat .ico{width:34px;height:34px;border-radius:9px;background:var(--tint);color:var(--acc);display:grid;place-items:center;flex:none}.feat .ico svg{width:18px;height:18px}
+.feat p{margin:0;color:var(--mut);font-size:12.5px}.feat .go{font-size:12px;font-weight:600;color:var(--acc);margin-top:auto}
+.ccard{padding:0;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;text-decoration:none}
+.ccard:hover{border-color:var(--line2)}
+.still{position:relative;background:#1b231e;aspect-ratio:16/9;overflow:hidden}
+.still img{width:100%;height:100%;object-fit:cover;display:block}
+.osd{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;align-items:center;font:600 11px/1 var(--mono);color:#fff;background:rgba(10,14,12,.62);padding:5px 8px;border-radius:5px}
+.rec{color:#ff6b5e}.rec .dot{animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+.ccard .b{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+
+/* command */
+.cmdtop{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,1fr);gap:14px}
+@media(max-width:1100px){.cmdtop{grid-template-columns:1fr}}
+.casehero{padding:0;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.casehero .still{aspect-ratio:auto;min-height:250px}
+.casehero .meta{padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+@media(max-width:900px){.casehero{grid-template-columns:1fr}.casehero .still{min-height:200px}}
+.evc .h{display:flex;align-items:center;gap:10px;font-weight:650}.evc .h svg{width:18px;height:18px;color:var(--ink2)}
+.vrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr);gap:14px}
+@media(max-width:1100px){.vrow{grid-template-columns:1fr}}
+.vtile{position:relative;border-radius:var(--r);overflow:hidden;background:#141a16;min-height:260px}
+.vtile video{width:100%;height:100%;display:block;object-fit:contain;max-height:420px}
+.cams{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto;padding:1px}
+.cam{display:flex;align-items:center;gap:11px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);cursor:pointer;text-align:left;width:100%}
+.cam:hover{background:var(--hover)}.cam.on{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--ink)}
+.cam img{width:64px;height:38px;object-fit:cover;border-radius:5px;background:#1b231e;flex:none}
+.cam .nm{font-weight:600;font-size:12.5px}.cam .mt{font:11px var(--mono);color:var(--mut)}
+.fl{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}.fl:last-child{border-bottom:0}.fl:hover{background:var(--hover)}
+.flags{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.flag{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:var(--sunk);cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.flag:hover{border-color:var(--line2)}.flag.on{background:var(--card)}
+.flag .s{font:700 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase}.flag.on .s{color:var(--ok)}.flag.off .s{color:var(--dim)}
+.flag .t{font-weight:600;font-size:12.5px}.flag .e{font-size:11.5px;color:var(--mut)}
+.sent{padding:9px 12px;border-left:3px solid var(--ok);background:var(--sunk);margin:6px 0;border-radius:0 8px 8px 0}.sent.bad{border-color:var(--warn);opacity:.8}
+
+/* case tabs (horizontal) */
+.tabs{display:flex;gap:2px;flex-wrap:wrap;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px;align-self:flex-start;max-width:100%}
+.tab{padding:7px 12px;border-radius:7px;text-decoration:none;color:var(--mut);font-weight:600;font-size:12.5px;white-space:nowrap}
+.tab:hover{color:var(--ink)}.tab.on{background:var(--card);color:var(--ink);box-shadow:0 0 0 1px var(--line),0 1px 2px rgba(17,21,19,.06)}
+.tab .n{font:600 10px var(--mono);margin-left:5px;color:var(--dim)}
+
+/* hypotheses */
+.hyp{border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.hyp.win{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}.hyp.lose{background:var(--sunk)}
+.hyp .score{font:650 22px/1 var(--disp);font-variant-numeric:tabular-nums}
+.chk{display:grid;grid-template-columns:20px minmax(0,1.25fr) minmax(0,1fr);gap:8px;align-items:start;font-size:12.5px;padding:5px 0;border-top:1px dashed var(--line)}
+.chk .i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700}
+.i.y{background:var(--ok-bg);color:var(--ok)}.i.n{background:var(--crit-bg);color:var(--crit)}.i.u{background:var(--sunk);color:var(--mut);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* reconciliation */
+.recon td{min-width:170px}.recon td:first-child{min-width:190px}
+.cell{border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.4;height:100%}
+.cell b{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.t-ok{background:var(--ok-bg);color:#14583a}.t-warn{background:var(--warn-bg);color:#7a4507}.t-crit{background:var(--crit-bg);color:#8f241c}.t-mut{background:var(--sunk);color:var(--mut)}
+
+/* provenance filmstrip */
+.film{display:grid;gap:3px}.film i{display:block;height:34px;border-radius:3px}
+.fs-rec i{background:#cfd6cc}.fs-exp i{background:#b9d9c5}.film i.cut{background:var(--crit-bg)!important;outline:1.5px dashed var(--crit);outline-offset:-1.5px}
+.film i.gone{visibility:hidden}.film i.only{background:#f3d9a8!important}
+.seg{display:flex;height:16px;border-radius:5px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}.seg div{height:100%}
+
+/* video wall */
+.players{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+.pl{position:relative;background:#111;border-radius:10px;overflow:hidden;cursor:pointer}.pl video{width:100%;display:block}
+.pl canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pl .cap{position:absolute;left:8px;top:8px;background:rgba(10,14,12,.7);color:#fff;padding:3px 8px;border-radius:5px;font:600 11px var(--mono)}
+.pl .prov{position:absolute;right:8px;bottom:8px}
+.clock{font:600 26px/1 var(--mono);letter-spacing:.02em}
+svg text{fill:var(--mut);font-size:10.5px;font-family:var(--sans)}
+
+/* ask */
+.askbox{display:flex;gap:8px}.askbox input{font-size:15px;padding:12px 14px}
+.q-ex{display:flex;gap:6px;flex-wrap:wrap}.q-ex button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--ink2)}
+.q-ex button:hover{background:var(--hover)}
+.cites{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.cite{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--card);cursor:pointer;display:flex;flex-direction:column}
+.cite:hover{border-color:var(--line2)}.cite img{width:100%;height:110px;object-fit:cover;background:#1b231e;display:block}
+.cite .c{padding:8px 10px;font-size:11.5px;display:flex;flex-direction:column;gap:2px}
+
+/* custody + replay */
+.chainrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.blk{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--sunk);min-width:150px}
+.blk .h{font:600 11px var(--sans);color:var(--ink2)}.blk .m{font:10.5px var(--mono);color:var(--mut)}
+.arrow{color:var(--dim)}
+
+/* capability matrix */
+.cap td{text-align:center;min-width:64px}.cap th{white-space:normal;min-width:64px}.cap td:first-child,.cap th:first-child{text-align:left}
+.lv{display:inline-block;border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;white-space:nowrap}
+.lv-real{background:var(--ink);color:#fff}.lv-synthetic{background:var(--ok-bg);color:var(--ok)}.lv-via{background:var(--info-bg);color:var(--info)}
+.lv-universal{background:var(--warn-bg);color:var(--warn)}.lv-none{background:var(--sunk);color:var(--dim);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* job: live ingest */
+.stages{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px}
+@media(max-width:1100px){.stages{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.stg{border:1px solid var(--line);border-radius:9px;padding:9px;background:var(--sunk);min-width:0}
+.stg .n{font:600 10px var(--mono);color:var(--dim)}.stg .t{font-weight:650;font-size:12px}.stg .d{font-size:10.5px;color:var(--mut);margin-top:3px;line-height:1.35}
+.stg.run{border-color:var(--acc);background:var(--card);box-shadow:inset 0 0 0 1px var(--acc)}.stg.done{background:var(--card)}.stg.done .t:after{content:" \2713";color:var(--ok)}.stg.skip{opacity:.45}
+.strip{display:grid;grid-template-columns:repeat(48,1fr);gap:3px}.strip i{display:block;aspect-ratio:1/1.25;border-radius:3px;background:var(--empty);transition:background .25s}
+.strip.scan i.on{background:var(--mint2)}
+.log{background:var(--deep);color:#cfe3d6;border-radius:10px;padding:12px;height:280px;overflow:auto;font:11.5px/1.55 var(--mono);white-space:pre-wrap}
+
+/* new analysis */
+.preset{cursor:pointer;display:flex;flex-direction:column;gap:4px}.preset:hover{border-color:var(--line2)}.preset.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.preset.big{background:var(--deep);color:var(--deepfg);border-color:var(--deep);grid-column:1/-1;flex-direction:row;align-items:center;gap:16px}
+.preset.big .mut{color:var(--deepmut)}.preset.big.sel{box-shadow:0 0 0 3px var(--mint)}
+
+/* inspector drawer */
+.insp{position:fixed;top:0;right:0;width:380px;max-width:92vw;height:100vh;background:var(--card);border-left:1px solid var(--line);box-shadow:-12px 0 40px rgba(17,21,19,.10);z-index:60;transform:translateX(102%);transition:transform .18s ease;display:flex;flex-direction:column}
+.insp.open{transform:none}.insp .ih{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.insp .ib{padding:14px 16px;overflow:auto;flex:1}
+.lk{border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--sunk);position:relative}
+.lk+.lk{margin-top:14px}.lk+.lk:before{content:"";position:absolute;left:18px;top:-15px;height:14px;border-left:2px dashed var(--line2)}
+.lk .h{font:700 10.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}.lk .b{font-size:12.5px;margin-top:2px;word-break:break-word}
+.lk.ok{background:var(--ok-bg);border-color:#c5e3d0}.lk.warn{background:var(--warn-bg);border-color:#f0d6a8}.lk.crit{background:var(--crit-bg);border-color:#f0c4be}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}.th{background:var(--card);border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer}
+.th img{width:100%;height:96px;object-fit:cover;display:block;background:#1b231e}.th .c{padding:5px 7px;font-size:10.5px}
+.layers{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}@media(max-width:1000px){.layers{grid-template-columns:repeat(2,1fr)}}
+.layer{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--card);cursor:pointer;border-top:3px solid}
+.layer .big{font:650 28px/1.1 var(--disp);margin:4px 0}
+.trace{max-height:300px;overflow:auto}.tr{display:flex;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}.lc{font:700 10.5px var(--mono);min-width:44px}
+.nav .nt{display:flex;flex-direction:column;line-height:1.2;min-width:0}.nav .nt small{font-size:10.5px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav a.on .nt small{color:var(--mut)}
+/* edit-reveal player */
+.rvbox{position:relative}.rvbox video{width:100%;border-radius:9px;background:#111;display:block}
+.rvover{position:absolute;left:0;right:0;bottom:0;top:22px;border-radius:9px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;pointer-events:none}
+.rvover.on{display:flex}.rvover.crit{background:rgba(195,53,43,.88);color:#fff}.rvover.warn{background:rgba(176,98,11,.88);color:#fff}
+.rvover.edge{background:transparent;box-shadow:inset 0 0 0 4px #E1251B;justify-content:flex-start;align-items:flex-start;padding:8px}
+.rvover.edge span{background:#E1251B;color:#fff;font:600 11px var(--mono);padding:3px 7px;border-radius:4px}
+.rvover b{font:700 22px var(--disp);letter-spacing:.02em}.rvover span{font:500 12px var(--mono)}
+/* disk map: instrument styling */
+.segbtn{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden}.segbtn button{border:0;background:var(--card);padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;color:var(--mut)}
+.segbtn button+button{border-left:1px solid var(--line2)}.segbtn button.on{background:var(--ink);color:#fff}
+.dmhead{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.dmhead>div{background:var(--sunk);padding:8px 11px;display:flex;flex-direction:column;min-width:0}.dmhead span{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.dmhead b{font:600 15px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmleg{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-size:12px;color:var(--ink2)}.dmleg span{display:inline-flex;align-items:center;gap:6px}
+.dmleg i{width:11px;height:11px;display:inline-block}.dmleg b{font:500 11.5px var(--mono);color:var(--mut)}
+i.hatch{background:repeating-linear-gradient(45deg,#2D5BD7 0 3px,#8FA9EC 3px 4px)!important}
+.dminstr{font:500 11.5px var(--mono);color:var(--ink2);margin-top:6px;display:flex;align-items:center;gap:7px;min-height:18px;letter-spacing:.02em}.dminstr i{width:10px;height:10px;display:inline-block}
+.hlb{background:#E1251B;color:#fff;border-radius:2px;padding:0 1px}
+/* Kanikadarpan */
+.xr{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,1fr);gap:14px;align-items:start}@media(max-width:1100px){.xr{grid-template-columns:1fr}}
+.xpanel{background:var(--deep);color:var(--deepfg);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.xpanel canvas{width:100%;display:block;border-radius:7px}
+.xread{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 4px}.xread>div{background:rgba(255,255,255,.05);border-radius:8px;padding:7px 9px;display:flex;flex-direction:column;min-width:0}
+.xread span{font-size:10.5px;color:var(--deepmut);text-transform:uppercase;letter-spacing:.06em}.xread b{font:600 13px var(--mono);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xhex{font:12px/1.65 var(--mono);color:#cfe3d6;white-space:pre;overflow-x:auto;background:rgba(0,0,0,.25);border-radius:8px;padding:8px 10px}.xhex .o{color:#6f8a7a}
+.xfields{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px;margin-top:6px}.xfields>div{display:flex;gap:7px;align-items:center;min-width:0}.xfields span:nth-child(2){color:var(--deepmut)}.xfields b{margin-left:auto;font:600 11.5px var(--mono);color:#fff;text-align:right}
+/* Nyaydarshika */
+.pres{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:min(1100px,94vw);background:var(--deep);color:var(--deepfg);border-radius:14px;box-shadow:0 18px 50px rgba(10,20,14,.35);z-index:70;display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:16px 18px 20px;overflow:hidden}
+.pres .pn{font:650 34px/1 var(--disp);color:var(--mint)}.pres .pn small{font-size:13px;color:var(--deepmut);margin-left:3px}
+.pres h3{color:#fff;font-size:18px;margin:3px 0}.pres p{margin:0;color:#cfe3d6;font-size:13.5px;max-width:80ch}.pres .pc{display:flex;gap:6px}
+.pres .pbar{position:absolute;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.08)}.pres .pbar i{display:block;height:100%;background:var(--mint);transition:width .3s}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+ <aside class="side" id="side"></aside>
+ <div class="main"><div class="top" id="top"></div><div class="page" id="main"></div></div>
+</div>
+<aside class="insp" id="insp" aria-label="Proof inspector"><div class="ih"><h3>Proof inspector</h3><span class="sp"></span><button class="btn sm" onclick="closeInsp()">Close</button></div><div class="ib" id="inspb"></div></aside>
+<script>
+const BOOT=/*BOOT*/null;
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=ms=>ms==null?"—":new Date(ms).toISOString().replace("T"," ").slice(0,19);
+const hms=ms=>ms==null?"—":new Date(ms).toISOString().slice(11,19);
+const hmsms=ms=>ms==null?"—":new Date(ms).toISOString().slice(11,22);
+const size=b=>b==null?"—":b>1e9?(b/1e9).toFixed(2)+" GB":b>1e6?(b/1e6).toFixed(1)+" MB":b>1e3?(b/1e3).toFixed(0)+" kB":b+" B";
+const pct=x=>x==null?"—":(x*100).toFixed(0)+"%";
+const n0=x=>x==null?"—":Number(x).toLocaleString("en-IN");
+const sevChip=s=>`<span class="chip ${({critical:"c-crit",warning:"c-warn",info:"c-info"})[s]||"c-n"}">${esc(s)}</span>`;
+const sevCol=s=>s==="critical"?"var(--crit)":s==="warning"?"var(--warn)":"var(--info)";
+const colorOf=id=>{let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},62%,42%)`};
+const PROV={"index":["#1f9d61","index-confirmed"],"carved":["#d98a0b","carved from deleted or formatted space"],"deleted-recovered":["#d23f31","recovered deleted file"],
+ "live-file":["#3b6fd8","export file"],"disguised-file":["#6b48d0","disguised file"]};
+const LVL={"index-confirmed":"#1f9d61","carved + timestamp":"#d98a0b","content-only":"#d4467b"};
+let CASE=null,CDIR=null,SEL=null;
+async function api(p,o){const r=await fetch(p,o);return r.json()}
+function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+
+// ---------------------------------------------------------------- icons (1.6px strokes, currentColor)
+const I={
+ home:'<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+ film:'<rect x="2.5" y="6" width="14" height="12" rx="2"/><path d="M16.5 10l5-3v10l-5-3"/>',
+ disk:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v3"/>',
+ layers:'<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
+ matrix:'<path d="M4 4h16v16H4z"/><path d="M4 10h16M4 15h16M10 4v16"/>',
+ prov:'<path d="M4 7h7M4 12h11M4 17h5"/><path d="M15 15l3 3 3-6"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+ ask:'<path d="M4 5h16v11H9l-5 4z"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.4"/>',
+ ai:'<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+ check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+ lock:'<rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+ shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+ replay:'<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/>',
+ eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+ dvr:'<rect x="2.5" y="7" width="19" height="10" rx="2"/><path d="M6 12h5M15.5 12h.01M18 12h.01"/>',
+ usb:'<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10 6h4"/>',
+ trend:'<path d="M4 18l5.5-6 4 3.5L20 7"/>',
+ warn:'<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+ doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+ bridge:'<path d="M3 17h18M5 17V9M19 17V9M3 9c4 0 5-4 9-4s5 4 9 4"/><path d="M9 17v-4M15 17v-4"/>',
+ touch:'<path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8z"/>',
+ scale:'<path d="M12 4v16M5 20h14M6 8h12"/><path d="M6 8l-3 6a3 3 0 0 0 6 0zM18 8l-3 6a3 3 0 0 0 6 0z"/>',
+ play:'<path d="M7 5l12 7-12 7z"/>',pause:'<path d="M8 5v14M16 5v14"/>',
+ xray:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10M3 10h18"/><path d="M9 7v6M13 7v6M17 7v6"/>'};
+const ico=(n,s="")=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${s}>${I[n]||""}</svg>`;
+
+// ---------------------------------------------------------------- the CCTV illustration (hero)
+function heroArt(){return `<svg viewBox="0 0 560 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<defs>
+ <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#ffffff" opacity=".07"/></pattern>
+ <linearGradient id="cone" x1="0" y1="0" x2="1" y2=".6"><stop offset="0" stop-color="#7fe3a6" stop-opacity=".38"/><stop offset="1" stop-color="#7fe3a6" stop-opacity="0"/></linearGradient>
+ <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a6f3c5"/><stop offset=".55" stop-color="#7fe3a6"/><stop offset="1" stop-color="#4fc985"/></linearGradient>
+ <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4f8d8"/><stop offset="1" stop-color="#8eeab4"/></linearGradient>
+ <radialGradient id="glass" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#3a5e4b"/><stop offset=".6" stop-color="#16271e"/><stop offset="1" stop-color="#0b140f"/></radialGradient>
+ <radialGradient id="led" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ff8a7e"/><stop offset=".45" stop-color="#ff4d3d"/><stop offset="1" stop-color="#ff4d3d" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="560" height="320" fill="url(#dots)"/>
+<circle cx="150" cy="70" r="210" fill="none" stroke="#7fe3a6" stroke-opacity=".06"/><circle cx="150" cy="70" r="150" fill="none" stroke="#7fe3a6" stroke-opacity=".08"/>
+<g class="sweep" style="transform-origin:330px 150px">
+ <path d="M352 158 L560 238 L560 330 L300 330 Z" fill="url(#cone)"/>
+ <g transform="translate(436 252)" stroke="#7fe3a6" stroke-width="2" fill="none" opacity=".9"><path d="M0 14V0h14"/><path d="M48 0h14v14"/><path d="M62 52v14H48"/><path d="M14 66H0V52"/></g>
+ <text x="436" y="244" style="fill:#7fe3a6;font:600 10px var(--mono)">person · 0.91</text>
+</g>
+<rect x="44" y="18" width="78" height="30" rx="7" fill="#2a4a39"/><rect x="52" y="24" width="62" height="18" rx="5" fill="#35604a"/>
+<path d="M84 46 C 92 92, 130 116, 176 130" stroke="#3f7a5b" stroke-width="16" stroke-linecap="round" fill="none"/>
+<path d="M84 46 C 92 92, 130 116, 176 130" stroke="#5aa67d" stroke-width="5" stroke-linecap="round" fill="none" opacity=".55"/>
+<circle cx="176" cy="132" r="15" fill="#2f5c45"/><circle cx="176" cy="132" r="7" fill="#7fe3a6"/>
+<g transform="rotate(16 260 150)">
+ <rect x="168" y="112" width="200" height="74" rx="20" fill="url(#body)"/>
+ <rect x="168" y="152" width="200" height="34" rx="16" fill="#3fb877" opacity=".55"/>
+ <path d="M158 104 h196 a20 20 0 0 1 20 20 v4 H170 a12 12 0 0 1 -12 -12 z" fill="url(#hood)"/>
+ <rect x="186" y="130" width="46" height="6" rx="3" fill="#2f9e64" opacity=".5"/><rect x="186" y="142" width="30" height="6" rx="3" fill="#2f9e64" opacity=".35"/>
+ <rect x="350" y="114" width="40" height="70" rx="14" fill="#2f9e64"/>
+ <circle cx="372" cy="149" r="30" fill="#1d3a2b"/><circle cx="372" cy="149" r="24" fill="url(#glass)"/>
+ <circle cx="372" cy="149" r="10" fill="#0a120d"/><path d="M357 139 a18 18 0 0 1 14 -8" stroke="#ffffff" stroke-opacity=".45" stroke-width="3" fill="none" stroke-linecap="round"/>
+ <circle class="led" cx="230" cy="168" r="11" fill="url(#led)"/><circle class="led" cx="230" cy="168" r="3.4" fill="#ff5a4b"/>
+</g>
+<g transform="translate(30 258)"><rect width="92" height="30" rx="7" fill="#0c1610" stroke="#2a4a39"/><circle cx="18" cy="15" r="5" fill="#ff5a4b" class="led"/><text x="30" y="19.5" style="fill:#eef6f0;font:600 11px var(--mono)">REC · RO</text></g>
+</svg>`}
+
+// ---------------------------------------------------------------- shell
+const NAV=[["#/","home","Overview","all cases"],["#/new","plus","New analysis","image, USB, exports"],["#/live","bridge","Setugrahan","live from a recorder"],
+ ["#/kasauti","touch","Kasautipeeth","real-recorder validation"],["#/caps","matrix","Kshamtapatra","capability matrix"],["#/maryada","scale","Maryadapatra","standards"]];
+const navItem=(href,ic,t,sub,on,extra="")=>`<a href="${href}" class="${on?"on":""}">${ico(ic)}<span class="nt"><span>${t}</span><small>${sub}</small></span>${extra}</a>`;
+function sideHTML(){const c=CASE,d=CDIR;const tab=(location.hash.split("/")[3]||"command");
+ const cur=location.hash||"#/";
+ let h=`<a class="brand" href="#/"><span class="mk"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7fe3a6" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></span><span><b>Sarvadristhi</b><small>all-seeing DVR/NVR forensics</small></span></a>
+ <nav class="nav">${NAV.map(([href,ic,t,sub])=>navItem(href,ic,t,sub,href==="#/"?cur==="#/"||cur==="":cur.startsWith(href))).join("")}</nav>`;
+ if(c&&d){const crit=c.findings.filter(f=>f.severity==="critical").length,leads=(((c.ai.layers||{}).L4||{}).insights||[]).length,rev=Object.keys(c.reviews||{}).filter(k=>k.startsWith("lead:")).length;
+  h+=`<div class="navh">Case · ${esc(c.case.case_id)}</div><nav class="nav">${TABS.map(([k,t,ic,sub])=>navItem(`#/case/${encodeURIComponent(d)}/${k}`,ic,t,sub,cur.startsWith("#/case/")&&tab===k,
+   (k==="command"&&crit?`<span class="cnt">${crit}</span>`:"")+(k==="review"&&leads?`<span class="cnt ${rev>=leads?"ok":"n"}">${rev}/${leads}</span>`:""))).join("")}</nav>
+   <button class="btn mint" style="justify-content:center" onclick="present()">${ico("play")}Nyaydarshika · present</button>`}
+ h+=`<div class="sidefoot"><div>Runs on<b>127.0.0.1 · offline</b></div><div>Evidence<b>opened read-only</b></div><div>Build<b>Sarvadristhi ${esc((BOOT&&BOOT.version)||"")}</b></div></div>`;
+ $("#side").innerHTML=h}
+function topHTML(crumbs,right=""){$("#top").innerHTML=`<div class="crumb">${crumbs}</div><span class="sp"></span>${right}`}
+
+function route(){const h=location.hash.slice(2).split("/");clearInterval(window._poll);closeInsp(true);
+ if(h[0]==="new")return newPage();if(h[0]==="job")return jobPage(h[1]);if(h[0]==="caps")return capsPage();
+ if(h[0]==="present"&&h[1]){const d=decodeURIComponent(h[1]);if(!CASE||CDIR!==d){api("/api/case/"+encodeURIComponent(d)).then(c=>{CASE=norm(c);CDIR=d;present()})}else present();return}
+ if(h[0]==="live")return livePage();if(h[0]==="kasauti")return kasautiPage();if(h[0]==="maryada")return maryadaPage();
+ if(h[0]==="case"){window._arg=h[3]?decodeURIComponent(h.slice(3).join("/")):null;return casePage(decodeURIComponent(h[1]),h[2]||"command")}home()}
+
+// ================================================================ overview
+async function home(){sideHTML();topHTML(`<b>Overview</b>`,`<span class="pill"><span class="dot" style="color:var(--ok)"></span>Local only · nothing leaves this PC</span><a class="btn pri" href="#/new">${ico("plus")}New analysis</a>`);
+ let cs=(BOOT&&BOOT.cases)||[];try{cs=await api("/api/caselist")}catch(e){}
+ const best=cs.find(c=>c.poisons&&c.poisons[1])||cs[0];
+ const link=t=>best?`#/case/${encodeURIComponent(best.dir)}/${t}`:"#/new";
+ $("#main").innerHTML=`<section class="hero"><div class="art">${heroArt()}</div>
+ <div class="txt"><span class="eyebrow" style="color:var(--mint)">SIH26150 · multi-vendor DVR/NVR forensics</span><h1>Every frame traced to the bytes it came from</h1>
+ <p>Sarvadristhi reads recorder disks, USB sticks and exports from any brand, recovers deleted and overwritten footage, puts every camera on one clock, and seals a replayable record of how each clip was produced.</p>
+ <div class="bul"><span><span class="dot"></span>Read-only, hashed before and after</span><span><span class="dot"></span>Format decided by bytes, not labels</span><span><span class="dot"></span>Signed replay capsules</span></div>
+ <div class="row" style="margin-top:6px"><a class="btn mint" href="#/new">${ico("plus")}Start an analysis</a>${best?`<a class="btn ghostd" href="${link("command")}">Open ${esc(best.case_id)}</a>`:""}</div></div></section>
+ <div class="grid g4">
+  <a class="card feat" href="${link("xray")}" style="background:var(--tint);border-color:#cfe5d6"><div class="h"><span class="ico" style="background:var(--deep);color:var(--mint)">${ico("xray")}</span>Watch a frame become bytes</div><p>Play recovered footage and see, frame by frame, the exact place on the seized disk it came from, with the recorder's own header decoded live.</p><span class="go">Kanikadarpan →</span></a>
+  <a class="card feat" href="${link("hypotheses")}"><div class="h"><span class="ico">${ico("layers")}</span>Read the bytes, not the label</div><p>Every format interpretation is tested side by side. Each shows the checks it passes and fails, and a disk can be marked unresolved instead of guessed.</p><span class="go">Roopnirnay →</span></a>
+  <a class="card feat" href="${link("reconcile")}"><div class="h"><span class="ico">${ico("matrix")}</span>Show where sources disagree</div><p>Recorder index, frames on disk, recorder log, burned-in clock and exported copies are compared camera by camera, with each difference stated plainly.</p><span class="go">Ekmatpatra →</span></a>
+  <a class="card feat" href="${link("custody")}"><div class="h"><span class="ico">${ico("replay")}</span>Rebuild any clip on another PC</div><p>A signed capsule lists the exact byte ranges behind every clip. A reviewer rebuilds each one from the image and checks the hash, without our parsers.</p><span class="go">Punarnirmiti →</span></a>
+ </div>
+ <div class="row"><h2>Cases</h2><span class="mut small">${cs.length} on this workstation</span></div>
+ ${cs.length?`<div class="grid g3">${cs.map(c=>`<a class="card ccard" href="#/case/${encodeURIComponent(c.dir)}">
+  <div class="still">${c.cover?`<img loading="lazy" src="/api/case/${encodeURIComponent(c.dir)}/still/${encodeURIComponent(c.cover)}?t=3" alt="">`:""}<span class="osd"><span class="rec"><span class="dot"></span></span>${esc(c.cover_label||c.case_id)}</span></div>
+  <div class="b"><div class="row"><h3>${esc(c.case_id)}</h3><span class="sp"></span>${c.poisons&&c.poisons[1]?`<span class="chip ${c.poisons[0]===c.poisons[1]?"c-ok":"c-crit"}">${c.poisons[0]}/${c.poisons[1]} caught</span>`:""}</div>
+  <div class="tiny mut">${esc(c.family)}</div>
+  <div class="row tiny"><span class="chip c-n">${n0(c.frames)} frames</span><span class="chip c-n">${c.clips} clips</span><span class="chip c-n">${c.items} item${c.items>1?"s":""}</span>${c.critical?`<span class="chip c-crit">${c.critical} critical</span>`:""}${c.ai?`<span class="chip c-lead">AI L1–L4</span>`:""}</div>
+  <div class="tiny dim">${esc(c.generated)} UTC · ${esc(c.examiner||"")}</div></div></a>`).join("")}</div>`:`<div class="card empty">No cases yet. <a href="#/new">Start an analysis</a>.</div>`}
+ <div class="card"><div class="hd"><h3>How Sarvadristhi works</h3><span class="sp"></span><span class="tiny mut">twelve stages, each logged to the custody chain</span></div><div class="stages">${STAGES.map((s,i)=>`<div class="stg"><div class="n">${String(i+1).padStart(2,"0")}</div><div class="t">${s[0]}</div><div class="d">${s[1]}</div></div>`).join("")}</div></div>`}
+
+const STAGES=[["Acquire","image + MD5/SHA-256"],["Identify","format from bytes"],["Recover","index, carving, deleted files"],["Attribute","camera & time"],
+["Clocks","drift, clock change"],["Clips","export + hash"],["Provenance","exports vs recorder"],["L1 Motion","when it moves"],["L2 Perception","RF-DETR, tracks, faces"],
+["L3 VLM","Qwen3-VL, cross-checked"],["L4 Context","links, rules, activities"],["Report","PDF, s.63(4), custody"]];
+const STAGE_KEYS=["acquire","identify","recover","attribute","clocks","clips","provenance","l1","l2","l3","l4","report"];
+
+// ================================================================ capability matrix
+async function capsPage(){sideHTML();topHTML(`<b>Kshamtapatra</b> · capability matrix`,`<span class="pill">as of ${esc((await capsData()).as_of)}</span>`);const m=await capsData();
+ const cell=v=>`<span class="lv lv-${v}">${({real:"real disk",synthetic:"modelled",via:"via Dahua",universal:"universal",none:"—"})[v]||v}</span>`;
+ $("#main").innerHTML=`<div class="row"><div class="col" style="gap:4px"><h1>Kshamtapatra <span class="mut" style="font-weight:500;font-size:18px">· what Sarvadristhi supports, per OEM</span></h1><p class="note">Every claim names its level and its sources. “Modelled” means validated on real footage written into the vendor's on-disk layout by Pramanshala. A cell becomes “real disk” only after a passing physical-recorder run in Kasautipeeth.</p></div></div>
+ <div class="card pad0"><div class="tblwrap"><table class="cap"><tr><th>OEM</th><th>Trust</th>${m.functions.map(f=>`<th>${esc(f[1])}</th>`).join("")}<th style="text-align:left">Basis</th></tr>
+ ${m.oems.map(o=>`<tr><td><b>${esc(o.oem)}</b><div class="tiny mut">${esc(o.family==="unknown"?"universal path":o.family)}</div></td><td><span class="chip ${o.trust==="L2"?"c-ok":o.trust==="L1"?"c-info":"c-n"}" title="${esc(m.trust[o.trust])}">${o.trust}</span></td>${m.functions.map(f=>`<td>${cell(o.cells[f[0]])}</td>`).join("")}<td style="text-align:left;min-width:220px;max-width:300px" class="tiny"><div>${esc(o.note)}</div>${o.sources.length?`<div class="dim">${o.sources.map(esc).join(" · ")}</div>`:""}</td></tr>`).join("")}</table></div></div>
+ <div class="grid g2"><div class="card"><h3>Levels</h3><div class="col" style="gap:8px;margin-top:10px">${Object.entries(m.levels).map(([k,v])=>`<div class="row" style="flex-wrap:nowrap">${cell(k)}<span class="small mut">${esc(v)}</span></div>`).join("")}</div></div>
+ <div class="card"><h3>Trust levels for format claims</h3><div class="col" style="gap:8px;margin-top:10px">${Object.entries(m.trust).map(([k,v])=>`<div class="row" style="flex-wrap:nowrap"><span class="chip c-n">${k}</span><span class="small mut">${esc(v)}</span></div>`).join("")}</div>
+ <h3 style="margin-top:16px">Removable media and exports</h3>${m.media.map(x=>`<div class="small" style="margin-top:8px"><b>${esc(x.name)}</b> · <span class="mut">${esc(x.level)}</span><div class="tiny dim">${esc(x.basis)}</div></div>`).join("")}</div></div>`}
+let _caps=null;async function capsData(){return _caps||(_caps=await api("/api/capabilities"))}
+
+// ================================================================ new analysis
+async function newPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>New analysis</b>`);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>New analysis</h1><p class="note">Evidence is opened read-only and hashed before and after. One analysis runs at a time; others queue.</p></div><div id="jobsbar"></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(320px,1fr);align-items:start">
+ <div class="card"><div class="hd"><h3>1 · Evidence</h3></div><div id="presets" class="grid g2"><div class="mut">Loading…</div></div>
+  <label class="lb">Evidence items, one per line: disk image, E01, VHD/USB image, export folder or video</label>
+  <textarea id="src" rows="4" placeholder="C:\\evidence\\dvr.img"></textarea><div id="srcmsg" class="tiny mut" style="margin-top:5px"></div>
+  <label class="lb">Attached drives</label><div id="drives" class="small mut">Scanning…</div></div>
+ <div class="col"><div class="card"><div class="hd"><h3>2 · Case</h3></div>
+  <label class="lb" style="margin-top:0">Case ID (must be new)</label><input id="cid" value="C-${new Date().toISOString().slice(5,16).replace(/[-T:]/g,"")}">
+  <label class="lb">Examiner</label><input id="exm" value="${esc(localStorage.exm||"")}" placeholder="Your name">
+  <label class="lb">Recorder-disk mode</label><select id="mode"><option value="auto">Auto: native parser, then universal sweep</option><option value="universal">Universal: ignore vendor parsers</option></select>
+  <label class="row small" style="margin-top:14px;gap:8px"><input type="checkbox" id="ai" checked style="width:auto"> Run AI layers L1–L4 on all cameras</label>
+  <div id="wbbox" class="card flat" style="margin-top:12px;padding:11px 12px"><label class="row small" style="gap:8px;flex-wrap:nowrap;align-items:flex-start"><input type="checkbox" id="wb" style="width:auto;margin-top:3px"> <span>Write-blocker attestation: original media went through a hardware write-blocker, or these items are image files</span></label><div class="tiny mut" id="wbnote" style="margin-top:4px">Ticked automatically for image files and presets. Required for physical drives.</div></div>
+  <div id="err" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div>
+  <div class="row" style="margin-top:14px"><button class="btn pri" id="go">${ico("check")}Start analysis</button></div></div>
+  <div class="card flat small mut">Physical drives: image first from an Administrator terminal (<span class="mono">sarvadristhi acquire</span>), then analyse the image. Use a hardware write-blocker for originals.</div></div></div>`;
+ $("#go").onclick=start;showJobs();
+ try{const s=await api("/api/sources");
+  $("#presets").innerHTML=s.presets.map(p=>`<div class="card preset ${p.scenario?"big":""}" data-p="${esc(JSON.stringify(p.paths||[p.path]))}" data-s="${p.scenario?1:""}">
+   ${p.scenario?`<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7fe3a6" stroke-width="1.3" style="flex:none">${I.shield}</svg>`:""}<div><b>${esc(p.title)}</b><div class="small mut">${esc(p.sub)}</div><div class="tiny mono mut" style="margin-top:4px">${size(p.bytes)}${p.paths?` · ${p.paths.length} items`:""}</div></div></div>`).join("");
+  $$(".preset").forEach(e=>e.onclick=()=>{$$(".preset").forEach(x=>x.classList.remove("sel"));e.classList.add("sel");$("#src").value=JSON.parse(e.dataset.p).join("\n");$("#src").dataset.scenario=e.dataset.s||"";$("#wb").checked=true;$("#wbnote").textContent="Ticked: preset items are image files.";if(e.dataset.s)$("#cid").value="OP-"+new Date().toISOString().slice(11,16).replace(":","");$("#srcmsg").textContent=e.dataset.s?"Scenario: real MEVA footage on deliberately poisoned recorders and a USB stick. Planted manipulations will be scored.":""})}
+ catch(e){$("#presets").innerHTML=`<div style="color:var(--crit)">Could not load presets</div>`}
+ api("/api/drives").then(d=>{$("#drives").innerHTML=d.length?`<table>${d.map(x=>`<tr><td class="mono">${esc(x.path)}</td><td>${esc(x.model)}</td><td>${esc(x.bus||"")}</td><td class="num">${size(+x.bytes)}</td></tr>`).join("")}</table>`:"None found"}).catch(()=>{$("#drives").textContent="Drive scan unavailable"})}
+async function showJobs(){try{const js=(await api("/api/jobs")).filter(j=>j.state==="running"||j.state==="queued");const el=$("#jobsbar");
+ if(el)el.innerHTML=js.length?`<div class="banner info">In progress: ${js.map(j=>`<a href="#/job/${j.id}">${esc(j.case)}</a> · ${j.state}`).join(" · ")}</div>`:""}catch(e){}}
+function showErr(m){const e=$("#err");e.style.display=m?"flex":"none";e.textContent=m||""}
+async function start(){const btn=$("#go");if(btn.disabled)return;showErr("");
+ const srcs=$("#src").value.split("\n").map(s=>s.trim().replace(/^["']+|["']+$/g,"")).filter(Boolean);
+ const body={sources:srcs,source:srcs[0]||"",case_id:$("#cid").value.trim(),examiner:$("#exm").value.trim(),mode:$("#mode").value,ai:$("#ai").checked,scenario:!!$("#src").dataset.scenario};
+ if(!srcs.length)return showErr("Choose a preset or enter at least one evidence path.");if(!body.examiner)return showErr("Enter the examiner's name.");
+ const devices=srcs.filter(s=>s.startsWith("\\\\.\\")||s.startsWith("\\\\?\\"));
+ if(!$("#wb").checked&&!devices.length){$("#wb").checked=true;$("#wbnote").textContent="Ticked: all items are image files, not physical drives."}
+ if(!$("#wb").checked){$("#wbbox").style.boxShadow="inset 0 0 0 2px var(--crit)";return showErr("Physical drive selected: tick the write-blocker attestation to confirm it is attached through a hardware write-blocker.")}
+ body.attestation=devices.length?"write-blocker attested by examiner":"items are image files";
+ btn.disabled=true;btn.textContent="Starting…";localStorage.exm=body.examiner;
+ try{const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();
+  if(!r.ok||j.error){showErr(j.error||("Server error "+r.status));btn.disabled=false;btn.innerHTML=ico("check")+"Start analysis";return}location.hash="#/job/"+j.job}
+ catch(e){showErr("Could not reach the Sarvadristhi server: "+e);btn.disabled=false;btn.innerHTML=ico("check")+"Start analysis"}}
+
+// ================================================================ live job
+function jobPage(id){sideHTML();topHTML(`<a href="#/">Overview</a> / <b id="jtitle">Analysis</b>`,`<span id="jst" class="chip c-info">…</span><span id="jel" class="mut small num"></span><button class="btn sm" id="jcancel">Cancel</button>`);
+ $("#main").innerHTML=`<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);align-items:stretch">
+ <div class="card"><div class="hd"><h3>Grahanpath <span class="mut" style="font-weight:500">· live ingest</span></h3><span class="sp"></span><span class="tiny mut" id="jitem"></span></div>
+  <div class="strip" id="strip">${"<i></i>".repeat(48*6)}</div>
+  <div class="leg" style="margin-top:10px"><span><span class="sw" style="background:var(--empty)"></span>not yet read</span><span><span class="sw" style="background:var(--mint2)"></span>read and hashed</span><span class="dim">The real disk map, coloured by what was found, appears in the workbench when the analysis completes.</span></div></div>
+ <div class="verdict" id="jver"><div class="r"><div><div class="l">Stage</div><div class="v" id="jstage">Waiting</div></div></div><div class="r"><div><div class="l">Evidence item</div><div class="v" id="jev">—</div></div></div><div class="r"><div><div class="l">Elapsed</div><div class="v" id="jt">0 s</div></div></div></div></div>
+ <div class="card"><div class="stages" id="stg">${STAGES.map((s,i)=>`<div class="stg"><div class="n">${String(i+1).padStart(2,"0")}</div><div class="t">${s[0]}</div><div class="d">${s[1]}</div></div>`).join("")}</div></div>
+ <div id="jmsg"></div><div class="card"><div class="hd"><h3>Events from the analysis</h3></div><div class="log" id="log">Waiting for the job to start…</div></div><div id="jdone"></div>`;
+ let fails=0,fill=0;const cells=$$("#strip i");
+ const tick=async()=>{let j;try{const r=await fetch("/api/job/"+id);j=await r.json();fails=0;if(!r.ok){$("#jmsg").innerHTML=`<div class="card" style="color:var(--crit)">Job not known to the server. <a href="#/">Back</a></div>`;clearInterval(window._poll);return}}
+  catch(e){if(++fails>5)$("#jmsg").innerHTML=`<div class="banner">Server not responding, retrying…</div>`;return}
+  $("#jtitle").textContent="Case "+j.case;const L=j.log||[];
+  const ev=j.stages||[],cur=ev.length?ev[ev.length-1]:null,seen={},dur={};
+  ev.forEach((e,i)=>{seen[e.key]=e;const nx=ev[i+1];dur[e.key]=(dur[e.key]||0)+((nx?nx.t:(j.elapsed_s||e.t))-e.t)});
+  const maxIdx=Math.max(-1,...ev.map(e=>STAGE_KEYS.indexOf(e.key)));
+  $$("#stg .stg").forEach((el,i)=>{const k=STAGE_KEYS[i],s=seen[k];let cls="";
+   if(j.state==="done")cls=s?"done":"skip";else if(cur&&k===cur.key&&j.state==="running")cls="run";else if(s)cls="done";else if(i<maxIdx)cls="skip";
+   el.className="stg "+cls;const d=el.querySelector(".d");if(!d.dataset.base)d.dataset.base=d.textContent;
+   d.textContent=s?`${cls==="run"?"running":"done"}${s.item&&cls==="run"?" · "+s.item:""} · ${Math.round(dur[k]||0)}s`:cls==="skip"?"not needed":d.dataset.base});
+  // the strip is driven by real stage events: it fills as the analysis moves through the stages
+  const prog=j.state==="done"?1:Math.max(0,(maxIdx+1)/STAGE_KEYS.length);const want=Math.round(prog*cells.length);
+  while(fill<want&&fill<cells.length){cells[fill++].className="on"}$("#strip").classList.add("scan");
+  $("#jstage").textContent=cur?STAGES[STAGE_KEYS.indexOf(cur.key)]?.[0]||cur.key:"Waiting";$("#jev").textContent=cur&&cur.item?cur.item+(cur.detail?" · "+cur.detail:""):(cur&&cur.detail)||(j.source||"").split(/[\\/]/).pop()||"—";$("#jev").style.fontSize="16px";$("#jt").textContent=`${Math.round(j.elapsed_s||0)} s`;
+  const lg=$("#log");if(L.length){lg.textContent=L.join("\n");lg.scrollTop=1e9}
+  $("#jst").className="chip "+({queued:"c-info",running:"c-info",done:"c-ok",failed:"c-crit",cancelled:"c-warn"}[j.state]);$("#jst").textContent=j.state+(j.state==="queued"?` · ${j.position} ahead`:"");
+  $("#jel").textContent=j.state==="queued"?"waiting for the GPU":`${j.elapsed_s}s`;$("#jcancel").style.display=(j.state==="running"||j.state==="queued")?"":"none";
+  if(j.state==="failed")$("#jmsg").innerHTML=`<div class="card" style="border-color:var(--crit)"><h3 style="color:var(--crit)">Analysis failed</h3><pre>${esc(L.slice(-14).join("\n"))}</pre><a class="btn sm" href="#/new">Try again</a></div>`;
+  if(j.state==="cancelled")$("#jmsg").innerHTML=`<div class="card">Cancelled. Partial output stays in the case folder.</div>`;
+  if(j.state==="done"){$("#jdone").innerHTML=j.kind==="kasauti"?`<a class="btn pri" href="#/kasauti">See the Kasautipeeth result →</a>`:`<a class="btn pri" href="#/case/${encodeURIComponent(j.case)}">Open the workbench for ${esc(j.case)} →</a>`;CASE=null}
+  if(!["running","queued"].includes(j.state))clearInterval(window._poll)};
+ $("#jcancel").onclick=async()=>{await fetch(`/api/job/${id}/cancel`,{method:"POST"});tick()};tick();window._poll=setInterval(tick,1000)}
+
+// ================================================================ case normalisation
+function norm(c){
+ if(!c.evidence_items){const fs=c.filesystem;c.evidence_items=[{id:"E1",name:c.case.case_id,path:c.evidence.source,kind:c.case.kind||"recorder-disk",family:c.detection.family,confidence:c.detection.confidence,
+  candidates:c.detection.candidates||[],coverage:{level:fs?"external tool, widely validated":"see method",basis:fs?"The Sleuth Kit":"single-item case"},hash:c.evidence.before,unchanged:c.evidence.unchanged,bytes:c.evidence.bytes,
+  recovery:c.recovery,filesystem:fs,custody:c.custody.status,custody_ok:c.custody.ok,dir:"",cameras:c.cameras}];
+  for(const k of c.clips){k.evidence=k.evidence||"E1";k.device=k.device||c.case.case_id;k.camera=k.camera||k.label||("Camera "+k.channel);
+   k.provenance=k.provenance||(k.evidence_level==="index-confirmed"?"index":"carved");k.time_source=Array.isArray(k.time_source)?k.time_source[0]:k.time_source;}}
+ for(const k of c.clips){k.label=k.label||k.camera||k.id}
+ c.byClip={};for(const k of c.clips)c.byClip[k.id]=k;
+ c.ai=c.ai||{};c.reviews=c.reviews||{};return c}
+
+// ================================================================ workbench
+const TABS=[["command","Drishtipeeth","grid","case overview"],["video","Timeline & video","film","all cameras, one clock"],["xray","Kanikadarpan","xray","frame-to-byte X-ray"],
+ ["hypotheses","Roopnirnay","layers","format hypotheses"],["disk","Disk & hex","disk","what was found where"],["reconcile","Ekmatpatra","matrix","where sources agree"],
+ ["provenance","Provenance","prov","exports vs recorder"],["time","Kaalsthirta","clock","clocks, offsets, robustness"],["ask","Saakshyaprashna","ask","ask the evidence"],
+ ["ai","AI reasoning","ai","four layers, inspectable"],["review","Review & report","check","Sakshilekh, Khandmudra"],["custody","Shrinkhalapatra","lock","custody · Punarnirmiti"]];
+async function casePage(dir,tab){if(!CASE||CDIR!==dir){$("#main").innerHTML=`<div class="card empty">Loading case…</div>`;CASE=norm(await api("/api/case/"+encodeURIComponent(dir)));CDIR=dir;SEL=null}
+ const c=CASE,F=p=>`/case/${encodeURIComponent(dir)}/file/${p}`;window.F=F;sideHTML();
+ const po=c.poison_scorecard||[];
+ topHTML(`<a href="#/">Cases</a> / <b>${esc(c.case.case_id)}</b> / ${esc((TABS.find(t=>t[0]===tab)||TABS[0])[1])}`,
+  `<span class="pill">${esc(c.case.kind||"recorder-disk")} · ${c.evidence_items.length} item${c.evidence_items.length>1?"s":""}</span>
+   <span class="pill" style="${c.custody_now.ok?"color:var(--ok);background:var(--ok-bg);border-color:transparent":"color:var(--crit);background:var(--crit-bg);border-color:transparent"}"><span class="dot"></span>${c.custody_now.ok?"Chain intact":"Chain broken"} · ${esc(c.custody_now.status.split(",")[0])}</span>
+   <button class="btn" onclick="openInsp()">${ico("eye")}Proof</button><button class="btn" onclick="present()">${ico("play")}Present</button><a class="btn pri" href="#/case/${encodeURIComponent(dir)}/custody">${ico("replay")}Punarnirmiti</a>`);
+ $("#main").innerHTML=`${c.scenario?`<div class="banner">${ico("warn",'width="16" height="16" style="flex:none;margin-top:1px"')}<span><b>Test bench.</b> ${esc(c.scenario.nature)}. Footage: ${esc(c.scenario.footage.dataset)} · ${esc(c.scenario.footage.license)}.</span></div>`:""}
+ <div id="tabc" class="col" style="gap:14px"></div>`;
+ ({command:tCommand,video:tVideo,xray:tXray,hypotheses:tHyp,disk:tDisk,reconcile:tRecon,provenance:tProv,time:tTime,ask:tAsk,ai:tAI,review:tReview,custody:tCustody}[tab]||tCommand)(c,F);
+ renderInsp()}
+const stillURL=(k,t=3)=>k&&k.mp4_file?`/api/case/${encodeURIComponent(CDIR)}/still/${encodeURIComponent(k.mp4_file)}?t=${t}`:"";
+
+// ---------------------------------------------------------------- inspector drawer
+function openInsp(){$("#insp").classList.add("open");renderInsp()}
+function closeInsp(silent){$("#insp").classList.remove("open")}
+function select(k,v){SEL={k,v};openInsp();if(k==="clip"&&window._seekClip)window._seekClip(v)}
+function renderInsp(){const el=$("#inspb");if(!el||!CASE)return;const c=CASE;
+ if(!SEL){el.innerHTML=`<div class="small mut">Select a clip, finding, evidence item, AI lead or answer to see exactly how it was derived: source bytes → method → frames → clip → time basis → AI → examiner → report.</div>`;return}
+ if(SEL.k==="clip")return el.innerHTML=lineageHTML(c.byClip[SEL.v]);
+ if(SEL.k==="ev"){const e=c.evidence_items.find(x=>x.id===SEL.v);return el.innerHTML=`<h3 style="margin-bottom:10px">Evidence ${esc(e.id)} · ${esc(e.name)}</h3>
+  <div class="lk ok"><div class="h">Source</div><div class="b mono">${esc(e.path)}</div><div class="b mono dim">sha256 ${esc((e.hash||{}).sha256||"per-file hashes")}</div><div class="tiny">${size(e.bytes)} · ${e.unchanged?"unchanged after analysis":"CHANGED"}</div></div>
+  <div class="lk"><div class="h">Identification</div><div class="b">${esc(e.family)} · score ${e.confidence}</div>${(e.candidates||[]).map(x=>`<div class="tiny">${esc(x.plugin)} → ${esc(x.family)}: ${x.confidence}</div>`).join("")}<a class="tiny" href="#/case/${encodeURIComponent(CDIR)}/hypotheses">all hypotheses and checks →</a></div>
+  <div class="lk ${e.coverage.level.startsWith("tested")?"warn":"ok"}"><div class="h">Coverage</div><div class="b">${esc(e.coverage.level)}</div><div class="tiny mut">${esc(e.coverage.basis)}</div></div>
+  <div class="lk ${e.custody_ok?"ok":"crit"}"><div class="h">Custody</div><div class="b">${esc(e.custody)}</div></div>`}
+ if(SEL.k==="finding"){const f=c.findings[+SEL.v];return el.innerHTML=`<h3 style="margin-bottom:10px">Finding</h3><div class="lk ${f.severity==="critical"?"crit":f.severity==="warning"?"warn":""}"><div class="h">${esc(f.kind)} · ${esc(f.severity)}</div><div class="b">${esc(f.summary)}</div></div>
+  <div class="lk"><div class="h">From evidence</div><div class="b">${esc(f.evidence||"E1")} · ${esc(f.device||"")}</div></div><div class="lk"><div class="h">Basis (raw detail)</div><pre>${esc(JSON.stringify(f.detail,null,1))}</pre></div>
+  <div class="lk ok"><div class="h">Report</div><div class="b">Listed in the findings section of the report</div></div>`}
+ if(SEL.k==="lead"){const L=(c.ai.layers||{}).L4||{};const i=(L.insights||[]).find(x=>x.id===SEL.v);if(!i)return;const r=c.reviews["lead:"+i.id];
+  return el.innerHTML=`<h3 style="margin-bottom:10px">AI lead ${esc(i.id)}</h3><div class="lk"><div class="h">${esc(i.rule)}</div><div class="b">${esc(i.statement)}</div><div class="tiny">confidence ${i.confidence}</div></div>
+  <div class="lk"><div class="h">Why</div><div class="b small">${esc(i.reasons.filter(Boolean).join("; "))}</div></div>
+  ${i.citations.slice(0,3).map(x=>`<div class="lk"><div class="h">Cites ${esc(x.clip)} @ ${esc(x.time)}</div><img src="${window.F(x.thumb)}" style="width:100%;border-radius:7px;margin-top:5px"></div>`).join("")}
+  <div class="lk ${r?(r.decision==="accepted"?"ok":r.decision==="rejected"?"crit":"warn"):"warn"}"><div class="h">Examiner</div><div class="b">${r?esc(r.decision)+(r.note?" — "+esc(r.note):""):"not yet reviewed"}</div></div>
+  <div class="lk ${r&&r.decision==="accepted"?"ok":""}"><div class="h">Report</div><div class="b">${r&&r.decision==="accepted"?"Included as an examiner-accepted finding":"Not a finding until accepted"}</div></div>`}}
+function lineageHTML(k){if(!k)return"";const c=CASE,F=window.F,ln=k.lineage||{},ai=(c.ai.layers||{}).L2,tr=ai?ai.tracks.filter(t=>t.clip===k.id):[];
+ const ins=(((c.ai.layers||{}).L4||{}).insights||[]).filter(i=>i.citations.some(x=>x.clip===k.id));const pv=(c.provenance||[]).find(r=>r.export===k.id||r.source_clip===k.id);
+ return `<div class="row" style="margin-bottom:10px"><h3>${esc(k.label)}</h3></div>${k.mp4_file?`<video controls muted src="${F("clips/"+k.mp4_file)}" style="width:100%;border-radius:8px;background:#111;margin-bottom:12px"></video>`:""}
+ <div class="lk ok"><div class="h">1 · Source image</div><div class="b mono">${esc(ln.source_image||c.evidence.source)}</div><div class="b mono dim">sha256 ${esc((ln.source_sha256||"").slice(0,32))}…</div></div>
+ <div class="lk"><div class="h">2 · Byte range</div><div class="b mono">${ln.first_offset!=null?"offset "+Number(ln.first_offset).toLocaleString()+" (0x"+Number(ln.first_offset).toString(16)+")":"file-level (export)"} · ${size(ln.bytes||k.bytes)}</div>${ln.first_offset!=null?`<a class="tiny" href="javascript:hexJump('${k.evidence}',${ln.first_offset})">open in hex viewer →</a>`:""}</div>
+ <div class="lk"><div class="h">3 · Method</div><div class="b">${esc(ln.method||k.provenance)}</div><div class="tiny mut">${esc((PROV[k.provenance]||[0,k.provenance])[1])}</div></div>
+ <div class="lk"><div class="h">4 · Frames</div><div class="b">${n0(k.frames)} frames · ${k.fps||"?"} fps · ${esc(k.evidence_level||"—")}</div>${ln.frames_csv?`<a class="tiny" href="${F(ln.frames_csv)}" target="_blank">frames.csv (every frame's offset) →</a>`:""}</div>
+ <div class="lk ok"><div class="h">5 · Clip</div><div class="b mono">mp4 ${esc((k.mp4_sha256||"").slice(0,24))}…</div>${k.raw_sha256?`<div class="b mono dim">raw ${esc(k.raw_sha256.slice(0,24))}…</div>`:""}${k.original_sha256?`<div class="b mono dim">original ${esc(k.original_sha256.slice(0,24))}…</div>`:""}</div>
+ <div class="lk ${k.time_uncertainty_ms==null?"warn":"ok"}"><div class="h">6 · Time basis</div><div class="b">${esc(k.time_source||"none")} · ${k.time_uncertainty_ms!=null?"± "+(k.time_uncertainty_ms/1000).toFixed(1)+" s":"untimed"}</div><div class="tiny">${hms(k.start_ms)} – ${hms(k.end_ms)} recorder clock${k.drift_s?` · overlay drift ${k.drift_s>0?"+":""}${k.drift_s} s`:""}</div></div>
+ ${pv?`<div class="lk ${pv.edits.length?"crit":"ok"}"><div class="h">7 · Provenance</div><div class="b small">${esc(pv.verdict)}</div></div>`:""}
+ <div class="lk"><div class="h">${pv?8:7} · AI on this clip</div><div class="b">${tr.length} tracks · ${ins.length} leads</div>${ins.slice(0,4).map(i=>`<div class="tiny"><a href="javascript:select('lead','${i.id}')">${esc(i.id)}</a> ${esc(i.title)}</div>`).join("")}</div>
+ <div class="lk"><div class="h">${pv?9:8} · Replay</div><div class="b small">Byte ranges for this clip are in the signed replay capsule</div><a class="tiny" href="#/case/${encodeURIComponent(CDIR)}/custody">rebuild it from the image →</a></div>`}
+
+// ---------------------------------------------------------------- command
+function heroClip(c){const pv=(c.provenance||[]).find(r=>r.edits&&r.edits.length);const k=pv&&c.byClip[pv.source_clip];if(k&&k.mp4_file)return k;
+ return c.clips.filter(k=>k.mp4_file).sort((a,b)=>(b.frames||0)-(a.frames||0))[0]}
+function camFlags(c){const out={};for(const r of c.provenance||[]){const s=c.byClip[r.source_clip];if(!s)continue;const key=s.label;
+  if(r.edits.length)out[key]=["c-crit",`${(r.edits.reduce((a,e)=>a+(e.recorder_to_ms-e.recorder_from_ms),0)/1000+0.1).toFixed(1)} s cut`];
+  else if(r.export_only.some(x=>x.only_surviving_copy))out[key]=out[key]||["c-warn","only copy"]}
+ for(const f of c.findings){const ch=(f.detail||{}).channel;if(f.kind==="clock-change"){const k=c.clips.find(x=>x.channel===ch);if(k)out[k.label]=out[k.label]||["c-crit","clock step"]}}
+ return out}
+function tCommand(c,F){const ps=c.ps_flags||[],po=c.poison_scorecard||[],sc=c.ai.scoring,n=((c.ai.layers||{}).L4||{}).narrative;
+ const go={evidence:"provenance",findings:"command",timeline:"time",ai:"ai",custody:"custody"};const hk=heroClip(c);
+ const cams=[...new Map(c.clips.filter(k=>k.mp4_file).map(k=>[k.label,k])).values()];const flags=camFlags(c);
+ const crit=c.findings.map((f,i)=>({f,i})).sort((a,b)=>({critical:0,warning:1}[a.f.severity]??2)-({critical:0,warning:1}[b.f.severity]??2));
+ $("#tabc").innerHTML=`<div class="cmdtop">
+ <div class="card casehero"><div class="still">${hk?`<img src="${stillURL(hk,4)}" alt="">`:""}<span class="osd"><span class="rec"><span class="dot"></span></span>${esc(hk?hk.label:"")} · ${hk?hms(hk.start_ms+4000):""}</span></div>
+  <div class="meta"><span class="eyebrow">Case</span><h1 style="font-size:26px">${esc(c.case.case_id)}</h1><div class="small mut">Examiner ${esc(c.case.examiner)} · generated ${esc(c.generated_utc)} UTC</div>
+  <div class="row" style="gap:6px"><span class="chip c-n">${n0(c.recovery.frames)} frames</span><span class="chip c-n">${c.clips.length} clips</span><span class="chip c-n">${cams.length} camera views</span><span class="chip c-n">${c.findings.length} findings</span></div>
+  <div class="small" style="margin-top:auto;color:var(--ink2)">Every number on this screen opens its proof. Select a camera, a finding or an evidence card.</div></div></div>
+ <div class="verdict">${po.length?`<div class="r"><div><div class="l">Planted manipulations caught</div><div class="v">${po.filter(p=>p.caught).length} / ${po.length}</div></div><span class="ic ${po.every(p=>p.caught)?"":"bad"}">${ico("check")}</span></div>`:""}
+  <div class="r"><div><div class="l">Evidence hashes before vs after</div><div class="v">${c.evidence.unchanged?"Unchanged":"CHANGED"}<small>${c.evidence_items.filter(e=>e.unchanged).length} of ${c.evidence_items.length}</small></div></div><span class="ic ${c.evidence.unchanged?"":"bad"}">${ico("lock")}</span></div>
+  <div class="r"><div><div class="l">Custody chain, re-verified now</div><div class="v">${c.custody_now.ok?"Intact":"Broken"}<small>${esc(c.custody_now.status.split(",")[0])}</small></div></div><span class="ic ${c.custody_now.ok?"":"bad"}">${ico("shield")}</span></div>
+  ${sc&&sc.recall!=null?`<div class="r"><div><div class="l">AI activity recall vs human labels</div><div class="v">${pct(sc.recall)}<small>${sc.hits} of ${sc.scorable} scorable</small></div></div><span class="ic">${ico("trend")}</span></div>`:""}</div></div>
+ <div class="grid g3">${c.evidence_items.map(evCard).join("")}</div>
+ <div class="vrow"><div class="vtile"><video id="cv" ${hk?`src="${F("clips/"+hk.mp4_file)}" poster="${stillURL(hk,4)}"`:""} muted autoplay loop playsinline controls></video><span class="osd" id="cvl" style="top:10px;bottom:auto;left:auto;right:10px"><span class="rec"><span class="dot"></span></span>${esc(hk?hk.label:"")}</span></div>
+  <div class="cams">${cams.map(k=>`<button class="cam ${hk&&k.label===hk.label?"on":""}" data-k="${esc(k.id)}"><img loading="lazy" src="${stillURL(k,2)}" alt=""><div style="min-width:0"><div class="nm">${esc(k.camera||k.label)}</div><div class="mt">${esc(k.device||"")} · ${hms(k.start_ms)}${k.drift_s?` · drift ${k.drift_s>0?"+":""}${k.drift_s} s`:""}</div></div>${flags[k.label]?`<span class="chip ${flags[k.label][0]}" style="margin-left:auto">${flags[k.label][1]}</span>`:""}</button>`).join("")}</div></div>
+ ${po.length?`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Poisoned-evidence scorecard</h3><span class="tiny mut">what was planted on the test bench, and what caught it</span></div><div class="tblwrap"><table><tr><th>#</th><th>Item</th><th>Planted manipulation</th><th>Result</th><th>Caught by</th></tr>${po.map(p=>`<tr><td class="mono">${p.id}</td><td style="white-space:nowrap">${esc(p.evidence)}</td><td>${esc(p.what)}<div class="tiny dim">${esc(p.planted)}</div></td><td>${p.caught?`<span class="chip c-ok">${ico("check",'width="12" height="12"')}Caught</span>`:`<span class="chip c-crit">Missed</span>`}</td><td class="small">${p.by.map(esc).join("<br>")}</td></tr>`).join("")}</table></div></div>`:""}
+ <div class="grid g2"><div class="card"><div class="hd"><h3>Findings</h3><span class="sp"></span><span class="tiny mut">${c.findings.length} · by severity</span></div><div style="max-height:420px;overflow:auto">${crit.map(({f,i})=>`<div class="fl" onclick="select('finding',${i})"><span class="sev" style="background:${sevCol(f.severity)}"></span><div style="flex:1;min-width:0"><div class="small">${esc(f.summary)}</div><div class="tiny mono dim">${esc(f.kind)}${f.evidence?" · "+esc(f.evidence):""}</div></div></div>`).join("")||`<div class="mut">None</div>`}</div></div>
+  <div class="card"><div class="hd"><h3>What happened</h3><span class="sp"></span><span class="tiny mut">AI summary, every sentence checked</span></div>${n&&n.sentences&&n.sentences.length?narrHTML(n):`<div class="mut small">No AI summary for this case.</div>`}</div></div>
+ ${ps.length?`<div class="card"><div class="hd"><h3>SIH26150 requirements this case demonstrates</h3><span class="sp"></span><span class="chip c-ok">${ps.filter(f=>f.status==="demonstrated").length} / ${ps.length}</span></div><div class="flags">${ps.map(f=>`<div class="flag ${f.status==="demonstrated"?"on":"off"}" onclick="location.hash='#/case/${encodeURIComponent(CDIR)}/${go[f.where]||"command"}'"><div class="s">${f.status==="demonstrated"?"● demonstrated":"○ not shown"}</div><div class="t">${esc(f.requirement)}</div><div class="e">${esc(f.evidence)}</div></div>`).join("")}</div></div>`:""}
+ ${sc?`<div class="card"><div class="hd"><h3>AI measured against human labels</h3><span class="tiny mut">MEVA activity annotations</span></div><div class="grid g4"><div><div class="verdict" style="background:none;color:var(--ink)"><div style="font:650 30px var(--disp);color:var(--lead)">${pct(sc.recall)}</div></div><div class="tiny mut">recall · ${sc.hits}/${sc.scorable} scorable labels</div></div>
+  <div><div style="font:650 30px var(--disp)">${pct(sc.precision_lower_bound)}</div><div class="tiny mut">precision lower bound</div></div><div><div style="font:650 30px var(--disp);color:var(--crit)">${sc.destroyed}</div><div class="tiny mut">labels in destroyed footage</div></div><div><div style="font:650 30px var(--disp);color:var(--dim)">${sc.not_modelled}</div><div class="tiny mut">activities not modelled</div></div></div>
+  <details style="margin-top:8px"><summary>every label and its result</summary><table style="margin-top:6px"><tr><th>Camera</th><th>Labelled activity</th><th>Time</th><th>Result</th></tr>${sc.labels.map(l=>`<tr><td>${esc(l.camera)}</td><td>${esc(l.activity)}</td><td class="mono">${hms(l.from_ms)}–${hms(l.to_ms)}</td><td>${l.status==="hit"?`<span class="chip c-ok">hit ${esc((l.matched_events||[]).slice(0,3).join(","))}</span>`:l.status==="missed"?`<span class="chip c-warn">missed</span>`:`<span class="chip c-n">${esc(l.status)}</span>`}</td></tr>`).join("")}</table><div class="tiny mut" style="margin-top:6px">${esc(sc.method)}</div></details></div>`:""}`;
+ $$(".cam").forEach(b=>b.onclick=()=>{const k=c.byClip[b.dataset.k];$$(".cam").forEach(x=>x.classList.toggle("on",x===b));const v=$("#cv");v.poster=stillURL(k,2);v.src=F("clips/"+k.mp4_file);v.play().catch(()=>{});$("#cvl").innerHTML=`<span class="rec"><span class="dot"></span></span>${esc(k.label)}`;SEL={k:"clip",v:k.id};renderInsp()})}
+function evCard(e){const lv=e.recovery&&e.recovery.levels||{},tot=Object.values(lv).reduce((a,b)=>a+b,0)||1;const fs=e.filesystem;
+ return `<div class="card evc" style="cursor:pointer" onclick="select('ev','${e.id}')"><div class="h">${ico(e.kind==="video-evidence"?"usb":"dvr")}${esc(e.id)} · ${esc(e.name)}<span class="sp"></span><span class="tiny mono mut">${esc(e.family)} · ${e.confidence}</span></div>
+ ${fs?`<div class="bar" style="margin:12px 0 8px"><span style="width:${(fs.files.filter(f=>!f.dir&&!f.system&&!f.deleted).length)/(Math.max(1,fs.files.filter(f=>!f.dir&&!f.system).length))*100}%;background:var(--meta)"></span><span style="flex:1;background:var(--del)"></span></div><div class="leg"><span><span class="sw" style="background:var(--meta)"></span>${fs.files.filter(f=>!f.dir&&!f.system&&!f.deleted).length} live files</span><span><span class="sw" style="background:var(--del)"></span>${fs.deleted.length} deleted · ${fs.deleted.filter(d=>d.recoverable).length} recovered</span><span>${esc(fs.filesystem)} · journal ${fs.journal.present?"present":"absent"}</span></div>`
+ :`<div class="bar" style="margin:12px 0 8px">${Object.entries(lv).map(([k,v])=>`<span title="${k}: ${v}" style="width:${v/tot*100}%;background:${LVL[k]||"#3b6fd8"}"></span>`).join("")}</div><div class="leg">${Object.entries(lv).map(([k,v])=>`<span><span class="sw" style="background:${LVL[k]||"#3b6fd8"}"></span>${n0(v)} ${k}</span>`).join("")}</div>`}
+ <div class="row tiny" style="margin-top:10px"><span class="chip ${e.coverage.level.startsWith("tested")?"c-warn":"c-ok"}">${esc(e.coverage.level)}</span><span class="sp"></span><span style="color:${e.unchanged?"var(--ok)":"var(--crit)"}">${e.unchanged?"✓ hash unchanged":"✗ hash changed"}</span></div></div>`}
+function narrHTML(n){return n.sentences.map(s=>`<div class="sent ${s.verified?"":"bad"}">${esc(s.text)}<div class="tiny" style="margin-top:3px">${s.verified?`<span style="color:var(--ok)">✓ checked against ${s.citations.map(x=>`<a href="javascript:select('lead','${x}')">${x}</a>`).join(", ")}</span>`:`<span style="color:var(--warn)">Excluded: ${esc(s.problems.join("; "))}</span>`}</div></div>`).join("")
+ +`<div class="tiny mut">${n.sentences.filter(s=>s.verified).length}/${n.sentences.length} sentences pass the citation, time and number check · ${esc(n.model)}</div><details><summary>exact prompt and raw answer</summary><pre>SYSTEM: ${esc(n.system)}\n\n${esc(n.prompt)}</pre><pre>${esc(n.raw)}</pre></details>`}
+
+// ---------------------------------------------------------------- format hypotheses
+async function tHyp(c){$("#tabc").innerHTML=`<div class="card empty">Testing interpretations…</div>`;const H=await api(`/api/case/${encodeURIComponent(CDIR)}/hypotheses`);
+ const st=s=>s.startsWith("accepted")?"c-ok":s.startsWith("contested")?"c-warn":s.startsWith("unresolved")?"c-crit":"c-n";
+ $("#tabc").innerHTML=`<div class="col" style="gap:4px"><h2>Format hypotheses</h2><p class="note">Each item is tested against every format Sarvadristhi knows. A hypothesis lists the structures it explains and the ones it fails. The score measures structural consistency; it is not a probability. A brand string on the disk is weak context and never decides on its own.</p></div>
+ ${H.map(h=>`<div class="card"><div class="hd">${ico(h.kind==="video-evidence"?"usb":"dvr",'width="18" height="18"')}<h3>${esc(h.evidence)} · ${esc(h.name)}</h3><span class="chip ${st(h.state)}">${esc(h.state)}</span><span class="sp"></span>${h.brands.length?h.brands.map(b=>`<span class="chip c-n" title="${esc(b.text)}">label string '${esc(b.brand)}' @0x${b.offset.toString(16)}</span>`).join(""):`<span class="tiny mut">no brand strings in the first 4 MB</span>`}</div>
+  ${h.note?`<div class="banner ${h.label_conflicts&&h.label_conflicts.length?"":"info"}" style="margin-bottom:12px">${esc(h.note)}</div>`:""}
+  ${h.hypotheses.length?`<div class="grid g3">${h.hypotheses.map(x=>`<div class="hyp ${x.selected?"win":x.score<0.3?"lose":""}"><div class="row"><b>${esc(x.family==="unknown"?"Universal (any recorder)":x.family)}</b>${x.selected?`<span class="chip c-ink">selected</span>`:x.role==="fallback"?`<span class="chip c-n">fallback</span>`:""}<span class="sp"></span><span class="score">${x.score.toFixed(2)}</span></div>
+   <div class="bar"><span style="width:${x.score*100}%;background:${x.selected?"var(--ink)":"var(--line2)"}"></span></div>
+   <div>${x.checks.map(k=>`<div class="chk"><span class="i ${k.ok===true?"y":k.ok===false?"n":"u"}">${k.ok===true?"✓":k.ok===false?"✗":"–"}</span><span>${esc(k.check)}</span><span class="tiny mono mut" style="text-align:right">${esc(k.detail)}</span></div>`).join("")}</div></div>`).join("")}</div>`:""}</div>`).join("")}`}
+
+// ---------------------------------------------------------------- reconciliation
+async function tRecon(c){$("#tabc").innerHTML=`<div class="card empty">Comparing sources…</div>`;const R=await api(`/api/case/${encodeURIComponent(CDIR)}/reconcile`);
+ const cnt={};for(const r of R.rows)for(const [k,v] of Object.entries(r.cells))cnt[v.tone]=(cnt[v.tone]||0)+1;
+ $("#tabc").innerHTML=`<div class="row"><div class="col" style="gap:4px;flex:1;min-width:300px"><h2>Evidence reconciliation</h2><p class="note">Five independent sources, compared camera by camera after aligning time basis. A difference is stated as a relation (extends beyond, offset, discrepant). It becomes a contradiction only when an examiner concludes so.</p></div>
+  <div class="row"><span class="chip c-crit">${cnt.crit||0} discrepant</span><span class="chip c-warn">${cnt.warn||0} differ</span><span class="chip c-ok">${cnt.ok||0} consistent</span><span class="chip c-n">${cnt.mut||0} cannot compare</span></div></div>
+ <div class="card pad0"><div class="tblwrap"><table class="recon"><tr><th>Camera</th>${R.columns.map(x=>`<th>${esc(x[1])}</th>`).join("")}</tr>
+ ${R.rows.map(r=>`<tr><td><b>${esc(r.camera)}</b><div class="tiny mut">${esc(r.device)} · CH${r.channel} · ${n0(r.frames)} frames</div></td>${R.columns.map(([k])=>{const v=r.cells[k];return `<td><div class="cell t-${v.tone}"><b>${esc(v.rel)}</b>${esc(v.text)}</div></td>`}).join("")}</tr>`).join("")}</table></div></div>
+ <div class="card flat small mut">Relations follow the brief: <b>consistent</b>, <b>extends beyond</b> (one source holds more than another), <b>offset</b> (constant clock difference), <b>discrepant</b> (sources disagree after alignment), <b>cannot compare</b> (a source is absent or not parsed for this format).</div>`}
+
+// ---------------------------------------------------------------- ask the case
+const ASK_EX=["Was anything deleted or edited?","People getting into a vehicle","When did a vehicle start near the parking camera?","Person entering on the bus lobby camera","Any clock changes?","Grey cars between 16:51 and 16:52","Who is the man at the stairwell?"];
+function tAsk(c){$("#tabc").innerHTML=`<div class="card" style="background:var(--deep);border-color:var(--deep);color:var(--deepfg)"><div class="col" style="gap:12px">
+ <div class="row"><h2 style="color:#fff">Ask the case</h2><span class="sp"></span><span class="chip" style="background:rgba(127,227,166,.14);color:var(--mint)">answers only from case data · offline</span></div>
+ <div class="askbox"><input id="aq" placeholder="e.g. When did a vehicle start near the parking camera?" style="background:#fff"><button class="btn mint" id="ago">${ico("search")}Ask</button></div>
+ <div class="q-ex">${ASK_EX.map(q=>`<button>${esc(q)}</button>`).join("")}</div></div></div><div id="ares" class="col" style="gap:14px"></div>`;
+ const run=async q=>{if(!q.trim())return;$("#aq").value=q;$("#ares").innerHTML=`<div class="card empty">Searching the case…</div>`;
+  const a=await api(`/api/case/${encodeURIComponent(CDIR)}/ask`,{method:"POST",body:JSON.stringify({q})});const p=a.parsed||{};
+  const chips=[...(p.cameras||[]).map(x=>["camera",x]),...(p.times||[]).length?[["time",p.times.join(" – ")]]:[],p.subject?["subject",p.subject]:null,...(p.colours||[]).map(x=>["colour",x]),...(p.activities||[]).map(x=>["activity",x.replace(/_/g," ")]),...(p.findings||[]).map(x=>["finding",x])].filter(Boolean);
+  $("#ares").innerHTML=`<div class="card" style="${a.refused?"background:var(--warn-bg);border-color:#f0d6a8":""}"><div class="row" style="margin-bottom:8px"><span class="eyebrow">${a.refused?"No answer from the evidence":"Answer"}</span><span class="sp"></span>${a.total?`<span class="chip c-n">${a.total} citation${a.total>1?"s":""}</span>`:""}</div>
+   <div style="font-size:16px;line-height:1.5">${esc(a.answer)}</div>
+   ${chips.length?`<div class="row" style="margin-top:12px;gap:6px"><span class="tiny mut">Understood as</span>${chips.map(([k,v])=>`<span class="chip c-n"><span class="dim">${k}</span> ${esc(v)}</span>`).join("")}</div>`:""}
+   ${a.basis?`<div class="tiny mut" style="margin-top:8px">${esc(a.basis)}</div>`:""}</div>
+   ${(a.citations||[]).length?`<div class="cites">${a.citations.map(x=>x.type==="finding"?`<div class="cite" style="cursor:default"><div class="c"><span>${sevChip(x.severity)}</span><b>${esc(x.id)}</b><span>${esc(x.text)}</span></div></div>`
+   :`<div class="cite" onclick="jump(${x.ms})"><img loading="lazy" src="${x.crop?F(x.crop):""}" alt=""><div class="c"><b>${esc(x.activity.replace(/_/g," "))}${x.colour?` · ${esc(x.colour)}`:""}</b><span class="mono">${esc(x.time)} · ${esc(x.id)}</span><span class="mut">${esc(x.camera)}</span><span class="dim">conf ${x.confidence}</span></div></div>`).join("")}</div>`:""}`};
+ const F=window.F;$("#ago").onclick=()=>run($("#aq").value);$("#aq").onkeydown=e=>{if(e.key==="Enter")run($("#aq").value)};$$(".q-ex button").forEach(b=>b.onclick=()=>run(b.textContent));$("#aq").focus();if(window._arg){run(window._arg);window._arg=null}}
+
+// ---------------------------------------------------------------- timeline + video wall
+function tVideo(c,F){const clips=c.clips.filter(k=>k.mp4_file&&k.start_ms!=null);if(!clips.length){$("#tabc").innerHTML=`<div class="card empty">No timed clips.</div>`;return}
+ const t0=d3.min(clips,k=>k.start_ms),t1=d3.max(clips,k=>k.end_ms);const ai=(c.ai.layers||{});const det={};for(const p of ((ai.L2||{}).clips||[]))det[p.clip]=p.detections;
+ const ent={};for(const e of ((ai.L4||{}).entities||[]))for(const t of e.tracks)ent[t]=e.id;const acts=(ai.L4||{}).activities||[];
+ const lanes=[...new Map(clips.map(k=>[k.device+"|"+k.camera,{dev:k.device,cam:k.camera}])).values()];
+ $("#tabc").innerHTML=`<div class="card"><div class="row"><div><div class="eyebrow">Recorder clock (UTC) · all items normalised</div><div class="clock" id="clk" style="margin-top:6px">${fmt(t0)}</div></div><span class="sp"></span>
+ <button class="btn pri" id="play">Play</button><select id="rate" style="width:auto"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select>
+ <label class="row small" style="gap:6px"><input type="checkbox" id="boxes" checked style="width:auto"> AI boxes</label></div>
+ <div id="tl" style="margin-top:12px"></div>
+ <div class="leg" style="margin-top:6px">${Object.entries(PROV).map(([k,v])=>`<span><span class="sw" style="background:${v[0]}"></span>${v[1]}</span>`).join("")}<span>▲ activity</span><span style="color:var(--crit)">■ removed from export · | finding</span><span>hatched = time uncertainty</span><span class="dim">scroll to zoom · drag to pan · click to jump</span></div></div>
+ ${examinerTools(c)}<div class="players" id="wall"></div>`;
+ bindExaminerTools(c);
+ const W=$("#tl").clientWidth||1000,LH=28,L=210,H=lanes.length*LH+40;
+ const svg=d3.select("#tl").append("svg").attr("width",W).attr("height",H);const x0=d3.scaleUtc().domain([t0-20000,t1+20000]).range([L,W-10]);let x=x0.copy();
+ const defs=svg.append("defs");defs.append("pattern").attr("id","hatch").attr("width",4).attr("height",4).attr("patternUnits","userSpaceOnUse").append("path").attr("d","M0,4L4,0").attr("stroke","#949b94").attr("stroke-width",1);
+ defs.append("clipPath").attr("id","clipr").append("rect").attr("x",L).attr("y",0).attr("width",W-L-10).attr("height",H);
+ lanes.forEach((ln,i)=>{svg.append("rect").attr("x",0).attr("y",i*LH).attr("width",W).attr("height",LH).attr("fill",i%2?"#f6f7f3":"#ffffff");
+  svg.append("text").attr("x",8).attr("y",i*LH+18).text(`${ln.dev} · ${ln.cam}`.slice(0,34)).style("fill","#353c37").style("font-weight",600)});
+ const g=svg.append("g").attr("clip-path","url(#clipr)"),ax=svg.append("g").attr("transform",`translate(0,${H-22})`);
+ const laneOf=k=>lanes.findIndex(l=>l.dev===k.device&&l.cam===k.camera);
+ const marks=((c.timeline||{}).items||[]).filter(i=>(i.kind==="finding"||i.kind==="log")&&i.start_ms>=t0-600000&&i.start_ms<=t1+900000);
+ let T=t0,playing=false,last=performance.now();const shown=new Map();
+ function setCur(){const cur=svg.select("#cur");if(!cur.empty())cur.attr("x1",x(T)).attr("x2",x(T))}
+ function draw(){g.selectAll("*").remove();
+  for(const k of clips){const y=laneOf(k)*LH+5,u=k.time_uncertainty_ms||0;const col=(PROV[k.provenance]||["#888"])[0];
+   if(u)g.append("rect").attr("x",x(k.start_ms-u)).attr("y",y).attr("width",Math.max(1,x(k.end_ms+u)-x(k.start_ms-u))).attr("height",18).attr("fill","url(#hatch)").attr("opacity",.6);
+   g.append("rect").attr("x",x(k.start_ms)).attr("y",y).attr("width",Math.max(2,x(k.end_ms)-x(k.start_ms))).attr("height",18).attr("rx",5).attr("fill",col).attr("opacity",.85).style("cursor","pointer").on("click",ev=>{ev.stopPropagation();select("clip",k.id)}).append("title").text(`${k.id} ${k.provenance} ${hms(k.start_ms)}-${hms(k.end_ms)}`)}
+  for(const r of (c.provenance||[]))for(const e of r.edits){const k=c.byClip[r.export];if(!k)continue;const y=laneOf(k)*LH+2;g.append("rect").attr("x",x(e.recorder_from_ms)).attr("y",y).attr("width",Math.max(3,x(e.recorder_to_ms)-x(e.recorder_from_ms))).attr("height",24).attr("fill","#c3352b").append("title").text(e.summary)}
+  for(const a of acts){const k=c.byClip[a.clip];if(!k)continue;const y=laneOf(k)*LH+25;g.append("path").attr("d",d3.symbol(d3.symbolTriangle,26)()).attr("transform",`translate(${x(a.from_ms+1000)},${y})`).attr("fill",a.type.includes("vehicle")?"#e07b16":"#6b48d0").append("title").text(`${a.id} ${a.type} ${hms(a.from_ms+1000)}`)}
+  for(const m of marks){g.append("line").attr("x1",x(m.start_ms)).attr("x2",x(m.start_ms)).attr("y1",0).attr("y2",H-24).attr("stroke",m.kind==="finding"?"#c3352b":"#949b94").attr("stroke-dasharray",m.kind==="log"?"2,3":"").append("title").text(m.text)}
+  g.append("line").attr("id","cur").attr("y1",0).attr("y2",H-24).attr("stroke","#111513").attr("stroke-width",1.6);ax.call(d3.axisBottom(x).ticks(8).tickFormat(d3.utcFormat("%H:%M:%S")));ax.selectAll("path,line").style("stroke","#c8cec5");setCur()}
+ svg.call(d3.zoom().scaleExtent([1,200]).translateExtent([[L,0],[W,H]]).extent([[L,0],[W,H]]).on("zoom",ev=>{x=ev.transform.rescaleX(x0);draw()}));
+ svg.on("click",ev=>{const [mx]=d3.pointer(ev);if(mx>L)set(+x.invert(mx))});
+ function wall(){const act=clips.filter(k=>T>=k.start_ms-500&&T<=k.end_ms+500).slice(0,6);const ids=act.map(k=>k.id);
+  for(const [id,el] of shown)if(!ids.includes(id)){el.remove();shown.delete(id)}
+  for(const k of act)if(!shown.has(k.id)){const d=document.createElement("div");d.className="pl";d.innerHTML=`<video src="${F("clips/"+k.mp4_file)}" muted preload="auto"></video><canvas></canvas><div class="cap">${esc(k.device)} · ${esc(k.camera)}</div><div class="prov"><span class="chip" style="background:rgba(255,255,255,.92);color:${(PROV[k.provenance]||["#111"])[0]}">${esc((PROV[k.provenance]||[0,k.provenance])[1])}</span></div>`;
+   d.onclick=()=>select("clip",k.id);$("#wall").appendChild(d);shown.set(k.id,d)}
+  for(const k of act){const d=shown.get(k.id),v=d.querySelector("video"),cv=d.querySelector("canvas");const want=(T-k.start_ms)/1000;
+   if(want>=0&&Math.abs(v.currentTime-want)>0.35)v.currentTime=Math.max(0,want);v.playbackRate=+$("#rate").value;if(playing&&v.paused)v.play().catch(()=>{});if(!playing&&!v.paused)v.pause();
+   if(!v.videoWidth)continue;cv.width=v.videoWidth;cv.height=v.videoHeight;const gx=cv.getContext("2d");gx.clearRect(0,0,cv.width,cv.height);
+   if(!$("#boxes").checked||!det[k.id])continue;const near=det[k.id].filter(q=>Math.abs(q.t-want)<=0.13);gx.lineWidth=3;gx.font="600 18px Segoe UI";
+   for(const q of near){const [a,b,cc,dd]=q.box,col=colorOf(ent[q.track]||q.track).replace("42%)","58%)");gx.strokeStyle=col;gx.strokeRect(a,b,cc-a,dd-b);const lab=`${ent[q.track]?ent[q.track]+" · ":""}${q.cls} ${q.conf.toFixed(2)}`;
+    gx.fillStyle="rgba(10,14,12,.75)";gx.fillRect(a,b-22,gx.measureText(lab).width+10,22);gx.fillStyle="#fff";gx.fillText(lab,a+5,b-5)}}}
+ function set(t){T=Math.max(t0,Math.min(t1,t));window._T=T;$("#clk").textContent=fmt(T);setCur();wall();if(window._onT)window._onT()}
+ $("#play").onclick=()=>{playing=!playing;$("#play").textContent=playing?"Pause":"Play";last=performance.now();set(T)};
+ const loop=now=>{if(!document.getElementById("clk"))return;if(playing){T+=(now-last)*(+$("#rate").value);if(T>=t1){playing=false;$("#play").textContent="Play"}set(T)}last=now;requestAnimationFrame(loop)};requestAnimationFrame(loop);
+ window._seekClip=id=>{const k=c.byClip[id];if(k&&k.start_ms)set(k.start_ms+500)};window.seek=set;draw();
+ if(window._seekTo){set(window._seekTo);window._seekTo=null}else{const first=acts[0];set(first?first.from_ms:t0)}}
+function jump(ms){window._seekTo=ms;location.hash=`#/case/${encodeURIComponent(CDIR)}/video`}
+
+// ---------------------------------------------------------------- disk + hex
+// hexJump(eid, off, len, label): open the disk screen at a byte offset and highlight [off, off+len) as proof
+function hexJump(eid,off,len,label){window._hexTo={eid,off,len,label};const h=`#/case/${encodeURIComponent(CDIR)}/disk`;if(location.hash===h)tDisk(CASE);else location.hash=h}
+const DM_COL={"index-confirmed":"#1F8A5B","carved + timestamp":"#D98E04","content-only":"#C2447A","metadata":"#2D5BD7","deleted file":"#D23B3B","live file":"#6E7781","empty":"#ECEAE3"};
+const hx8=n=>"0x"+Math.floor(n).toString(16).toUpperCase().padStart(8,"0");
+function tDisk(c){const items=c.evidence_items;const pre=window._hexTo;window._hexTo=null;
+ $("#tabc").innerHTML=`<div class="card"><div class="hd"><div class="col" style="gap:2px"><h3 style="font-size:17px;letter-spacing:-.02em">Disk map</h3><span class="tiny mut">each tile is one slice of the seized image, in disk order; click a tile to see what lives there</span></div><span class="sp"></span>
+  <div class="segbtn" id="dmview"><button data-v="1" class="on">Disk holds</button><button data-v="0">Index admits</button></div>
+  <select id="dev" style="width:auto">${items.map(e=>`<option value="${e.id}" ${pre&&pre.eid===e.id?"selected":""}>${esc(e.id)} · ${esc(e.name)} (${size(e.bytes)})</option>`).join("")}</select></div>
+  <div class="dmhead" id="dmhead"></div>
+  <div style="position:relative"><canvas id="dm" style="width:100%;cursor:crosshair;display:block"></canvas></div>
+  <div class="row" style="margin-top:8px;gap:10px"><span class="tiny mono mut" style="white-space:nowrap">INDEX ADMITS</span><input type="range" id="dmwipe" min="0" max="1000" value="1000" style="padding:0;accent-color:#1F8A5B;flex:1"><span class="tiny mono mut" style="white-space:nowrap">DISK HOLDS</span><button class="btn sm" id="dmplay">${ico("play")}Wipe</button></div>
+  <div id="dmleg" class="dmleg"></div><div id="dmhover" class="dminstr">&nbsp;</div></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start">
+  <div class="card"><div class="hd"><h3>Hex viewer</h3><span class="chip c-ok">original image · read-only</span><span class="sp"></span><span class="tiny mut" id="hexproof"></span></div><div class="row" style="margin-bottom:10px;flex-wrap:nowrap"><input id="hoff" placeholder="offset (decimal or 0x…)" style="max-width:220px"><button class="btn sm pri" id="hgo">Read</button><button class="btn sm" id="hprev">−256</button><button class="btn sm" id="hnext">+256</button></div><div id="hex" class="mono" style="white-space:pre;line-height:1.6;overflow-x:auto"></div></div>
+  <div class="col"><div class="card" id="cellinfo"><div class="hd"><h3>What lives here</h3></div><div class="small mut">Click any tile of the map.</div></div><div class="card"><div class="hd"><h3>Structures and regions</h3></div><div id="regs" class="small"></div></div></div></div>`;
+ let hoff=0,M=null,sel=-1,hover=-1,wipe=1,showDisk=true,replay=null,hl=pre&&pre.len?{a:pre.off,b:pre.off+pre.len,label:pre.label}:null;
+ const cv=$("#dm"),L=92,TOP=40,GAP=1;let cols=96,rows=0,cell=10,W=0,H=0;
+ const hatch=(()=>{const p=document.createElement("canvas");p.width=p.height=6;const g=p.getContext("2d");g.fillStyle=DM_COL.metadata;g.fillRect(0,0,6,6);g.strokeStyle="rgba(255,255,255,.55)";g.lineWidth=1.2;g.beginPath();g.moveTo(0,6);g.lineTo(6,0);g.moveTo(-1,1);g.lineTo(1,-1);g.moveTo(5,7);g.lineTo(7,5);g.stroke();return p})();
+ const fillFor=(g,cat)=>cat==="metadata"?g.createPattern(hatch,"repeat"):DM_COL[cat]||"#ccc";
+ function geom(){const dpr=devicePixelRatio||1;W=cv.clientWidth||900;cell=Math.max(6,Math.floor((W-L-8)/cols));rows=Math.ceil(M.bins/cols);H=TOP+rows*cell+6;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.height=H+"px";const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return g}
+ function catOf(c2){if(showDisk&&c2.b/M.bins<=wipe)return c2.cat;if(!showDisk||c2.b/M.bins>wipe){if(c2.k&1)return"index-confirmed";if(c2.k&8)return"metadata";return c2.cat==="empty"?"empty":"unlisted"}return c2.cat}
+ function draw(){if(!M)return;const g=geom(),span=cols*M.bytes_per_bin;g.fillStyle="#ffffff";g.fillRect(0,0,W,H);
+  g.font="10.5px Cascadia Mono, Consolas, monospace";g.fillStyle="#7A7769";g.strokeStyle="#C9C6BA";g.lineWidth=1;
+  g.beginPath();g.moveTo(L,16.5);g.lineTo(L+cols*cell,16.5);g.stroke();let lastX=-1e9;
+  for(let i=0;i<=8;i++){const x=L+i/8*cols*cell;g.beginPath();g.moveTo(x+.5,12);g.lineTo(x+.5,20);g.stroke();const t="+"+Math.round(i/8*span).toString(16).toUpperCase();const tw=g.measureText(t).width;const tx=Math.min(Math.max(L,x-tw/2),L+cols*cell-tw);if(tx>lastX+6){g.fillText(t,tx,10);lastX=tx+tw}}
+  // structure brackets over their tiles (row 0 band); a structure elsewhere is outlined on the map
+  g.font="bold 9px Segoe UI, sans-serif";let lastB=-1e9;
+  for(const r of M.regions){const b0=Math.floor(r.offset/M.bytes_per_bin),b1=Math.floor((r.offset+r.length-1)/M.bytes_per_bin);if(b0>=cols)continue;
+   const x0=L+b0*cell,x1=L+Math.min(cols-1,b1)*cell+cell-1;g.strokeStyle="#2A2E2A";g.beginPath();g.moveTo(x0+.5,TOP-4);g.lineTo(x0+.5,TOP-9);g.lineTo(x1+.5,TOP-9);g.lineTo(x1+.5,TOP-4);g.stroke();
+   const lab=r.name.replace("HIKBTREE ","").toUpperCase().replace("MASTER SECTOR","MBR").replace("SYSTEM LOG","LOG");const tw=g.measureText(lab).width;if(x0>lastB+4&&x0+tw<L+cols*cell){g.fillStyle="#2A2E2A";g.fillText(lab,x0,TOP-12);lastB=x0+tw}}
+  const head=replay!=null?replay:1e9;
+  for(const c2 of M.cells){const col=c2.b%cols,row=Math.floor(c2.b/cols),x=L+col*cell,y=TOP+row*cell;
+   if(c2.b>head){g.fillStyle="#F4F2EC";g.fillRect(x,y,cell-GAP,cell-GAP);continue}
+   const cat=catOf(c2);if(cat==="unlisted"){g.fillStyle="#F1EEE6";g.fillRect(x,y,cell-GAP,cell-GAP);g.strokeStyle="#D9D5C8";g.strokeRect(x+.5,y+.5,cell-GAP-1,cell-GAP-1);continue}
+   g.globalAlpha=cat==="empty"?1:.72+.28*Math.min(1,c2.fill);g.fillStyle=fillFor(g,cat);g.fillRect(x,y,cell-GAP,cell-GAP);g.globalAlpha=1}
+  g.font="10.5px Cascadia Mono, Consolas, monospace";g.fillStyle="#7A7769";for(let r=0;r<rows;r+=8)g.fillText(hx8(r*span),4,TOP+r*cell+cell-2);
+  if(wipe<1&&showDisk){const x=L+(wipe*M.bins%cols)*cell,yrow=Math.floor(wipe*M.bins/cols);g.fillStyle="#1F8A5B";g.fillRect(L,TOP+yrow*cell-1,cols*cell,2)}
+  if(hover>=0&&replay==null){const col=hover%cols,row=Math.floor(hover/cols);g.fillStyle="rgba(0,0,0,.035)";g.fillRect(L,TOP+row*cell,cols*cell,cell);g.fillRect(L+col*cell,TOP,cell,rows*cell);g.strokeStyle="#111513";g.lineWidth=1.5;g.strokeRect(L+col*cell-.5,TOP+row*cell-.5,cell,cell)}
+  if(hl){const b0=Math.floor(hl.a/M.bytes_per_bin);const x=L+(b0%cols)*cell,y=TOP+Math.floor(b0/cols)*cell;g.strokeStyle="#E1251B";g.lineWidth=2;g.strokeRect(x-1,y-1,cell+1,cell+1)}
+  if(sel>=0){const x=L+(sel%cols)*cell,y=TOP+Math.floor(sel/cols)*cell;g.strokeStyle="#E1251B";g.lineWidth=2;g.strokeRect(x-1,y-1,cell+1,cell+1)}
+  if(replay!=null){const row=Math.floor(replay/cols),col=replay%cols,y=TOP+(row+1)*cell;g.fillStyle="#E1251B";g.fillRect(L,y-1,(col+1)*cell,2);g.fillRect(L+col*cell+cell/2-1,TOP+row*cell-3,2,cell+3);
+   for(let i=1;i<=14;i++){const b=replay-i;if(b<0)break;g.fillStyle=`rgba(225,37,27,${.25*(1-i/15)})`;g.fillRect(L+(b%cols)*cell,TOP+Math.floor(b/cols)*cell,cell-GAP,cell-GAP)}
+   g.font="bold 10px Segoe UI, sans-serif";g.fillText("READ HEAD · "+hx8(replay*M.bytes_per_bin),Math.min(L+col*cell+8,W-150),TOP+row*cell-5);
+   g.fillStyle="#7A7769";const t=`REPLAY OF RECORDED SCAN · ${Math.round(replay/M.bins*100)}%`;g.fillText(t,W-g.measureText(t).width-6,H-4)}}
+ const cellAt=ev=>{const r=cv.getBoundingClientRect(),x=(ev.clientX-r.left)*(W/r.width)-L,y=(ev.clientY-r.top)*(H/r.height)-TOP;if(x<0||y<0)return -1;const b=Math.floor(y/cell)*cols+Math.floor(x/cell);return Math.floor(x/cell)<cols&&b<M.bins?b:-1};
+ function legend(){const cnt={};for(const c2 of M.cells)cnt[c2.cat]=(cnt[c2.cat]||0)+1;
+  $("#dmleg").innerHTML=M.categories.map(k=>`<span style="opacity:${cnt[k]?1:.4}"><i class="${k==="metadata"?"hatch":""}" style="background:${k==="metadata"?"":DM_COL[k]}"></i>${k}<b>${(cnt[k]||0).toLocaleString()}</b></span>`).join("");
+  const vid=M.cells.filter(c2=>c2.k&7).length,idx=M.cells.filter(c2=>c2.k&1).length;
+  $("#dmhead").innerHTML=`<div><span>slices with video</span><b>${vid.toLocaleString()}</b></div><div><span>listed in the recorder's index</span><b style="color:#1F8A5B">${idx.toLocaleString()}</b></div><div><span>recovered beyond the index</span><b style="color:#B97A03">${(vid-idx).toLocaleString()}</b></div><div><span>slice size</span><b>${size(M.bytes_per_bin)}</b></div><div><span>image</span><b>${size(M.bytes)} · ${esc(M.family)}</b></div>`}
+ async function inspect(b){const a=Math.floor(b*M.bytes_per_bin),z=Math.floor((b+1)*M.bytes_per_bin);const I=await api(`/api/case/${encodeURIComponent(CDIR)}/cell/${$("#dev").value}?a=${a}&b=${z}`);
+  $("#cellinfo").innerHTML=`<div class="hd"><h3>What lives here</h3><span class="sp"></span><span class="tiny mono mut">${hx8(a)} – ${hx8(z)}</span></div>
+   ${I.clips&&I.clips.length?I.clips.map(g=>`<div class="lk" style="margin-bottom:8px"><div class="h">${esc(g.label)}</div><div class="b">${g.frames.toLocaleString()} frames · ${g.keyframes} keyframes · ${Object.entries(g.levels).map(([k,v])=>`<span style="color:${DM_COL[k]||"inherit"}">${v} ${k}</span>`).join(", ")}</div>
+    <div class="tiny mono mut">${g.first_ms?hmsms(g.first_ms)+" – "+hmsms(g.last_ms)+" recorder time":"untimed"}</div>
+    <div class="row" style="gap:6px;margin-top:6px">${g.clip&&g.playable?`<button class="btn sm pri" onclick="xrayAt('${g.clip}',${g.first_ms||0})">${ico("xray")}Frame X-ray here</button><button class="btn sm" onclick="jump(${g.first_ms||0})">${ico("film")}Timeline</button>`:""}<button class="btn sm" onclick="window._hx(${g.first_offset})">Hex</button></div></div>`).join("")
+    :`<div class="small mut">No recovered video frames in this slice.</div>`}
+   ${(I.structures||[]).map(s=>`<div class="lk" style="margin-bottom:8px;background:#eef2fb"><div class="h">structure</div><div class="b">${esc(s.name)} · ${hx8(s.offset)} · ${size(s.length)}</div></div>`).join("")}
+   ${(I.files||[]).map(f=>`<div class="lk crit" style="margin-bottom:8px"><div class="h">deleted file</div><div class="b mono">${esc(f.path)}</div><div class="tiny">${esc(f.verdict||"")}</div></div>`).join("")}`}
+ async function load(eid){M=await api(`/api/case/${encodeURIComponent(CDIR)}/diskmap/${eid}?bins=2400`);if(M.error){$("#regs").textContent=M.error;return}
+  legend();$("#regs").innerHTML=M.regions.length?`<table><tr><th>Region</th><th>Offset</th><th>Length</th></tr>${M.regions.map(r=>`<tr class="click" onclick="window._hx(${r.offset})"><td>${esc(r.name)}</td><td class="mono">${hx8(r.offset)}</td><td class="num">${size(r.length)}</td></tr>`).join("")}</table>`:`<div class="mut">No parsed structures for this item.</div>`;
+  if(!matchMedia("(prefers-reduced-motion: reduce)").matches&&!pre){replay=0;const t0=performance.now(),dur=1400;const step=now=>{if(!document.getElementById("dm")||replay==null)return;replay=Math.min(M.bins-1,Math.floor((now-t0)/dur*M.bins));draw();if(replay>=M.bins-1){replay=null;draw()}else requestAnimationFrame(step)};requestAnimationFrame(step)}else draw()}
+ cv.onmousemove=ev=>{if(!M)return;const b=cellAt(ev);if(b===hover)return;hover=b;draw();const c2=M.cells[b];
+  $("#dmhover").innerHTML=c2?`<i style="background:${DM_COL[c2.cat]}"></i>CELL ${String(b).padStart(4,"0")} · ${hx8(b*M.bytes_per_bin)} · ${c2.cat.toUpperCase()} · fill ${c2.fill.toFixed(2)}`:"&nbsp;"};
+ cv.onmouseleave=()=>{hover=-1;draw()};
+ cv.onclick=ev=>{const b=cellAt(ev);if(b<0)return;sel=b;hl=null;draw();hx(Math.floor(b*M.bytes_per_bin));inspect(b)};
+ $("#dmwipe").oninput=()=>{wipe=$("#dmwipe").value/1000;draw()};
+ $("#dmplay").onclick=()=>{showDisk=true;$$("#dmview button").forEach(x=>x.classList.toggle("on",x.dataset.v==="1"));const t0=performance.now();const s=now=>{const p=Math.min(1,(now-t0)/2200);wipe=p;$("#dmwipe").value=p*1000;draw();if(p<1&&document.getElementById("dm"))requestAnimationFrame(s)};wipe=0;requestAnimationFrame(s)};
+ $$("#dmview button").forEach(b=>b.onclick=()=>{showDisk=b.dataset.v==="1";wipe=showDisk?1:0;$("#dmwipe").value=wipe*1000;$$("#dmview button").forEach(x=>x.classList.toggle("on",x===b));draw()});
+ async function hx(off){hoff=off;$("#hoff").value="0x"+off.toString(16);const h=await api(`/api/case/${encodeURIComponent(CDIR)}/hex/${$("#dev").value}?offset=${off}`);
+  if(h.error){$("#hex").textContent=h.error;return}
+  $("#hex").innerHTML=h.rows.map(r=>{const bytes=r.hex.split(" ");return `<div><span class="dim">${hx8(r.offset)}</span>  ${bytes.map((x,i)=>{const p=r.offset+i;return hl&&p>=hl.a&&p<hl.b?`<b class="hlb">${x}</b>`:x}).join(" ")}  <span style="color:var(--acc)">${esc(r.ascii)}</span></div>`}).join("")+`<div class="tiny mut" style="margin-top:8px;white-space:normal">${esc(h.source)} · read-only</div>`;
+  $("#hexproof").innerHTML=hl&&hl.label?`<span class="chip c-crit">proof · ${esc(hl.label)}</span>`:""}
+ window._hx=hx;$("#dev").onchange=()=>{sel=-1;hl=null;load($("#dev").value);hx(0)};$("#hgo").onclick=()=>hx(parseInt($("#hoff").value)||0);$("#hprev").onclick=()=>hx(Math.max(0,hoff-256));$("#hnext").onclick=()=>hx(hoff+256);
+ addEventListener("resize",()=>{if(document.getElementById("dm"))draw()});
+ load($("#dev").value).then(()=>{hx(pre?Math.floor(pre.off/16)*16:0x200);if(pre&&M){sel=Math.floor(pre.off/M.bytes_per_bin);inspect(sel);draw()}})}
+function xrayAt(clip,ms){window._arg=clip;window._seekMs=ms;location.hash=`#/case/${encodeURIComponent(CDIR)}/xray`}
+
+// ---------------------------------------------------------------- provenance
+function filmstrip(r){const cells=48,tot=r.segments.reduce((a,s)=>a+s.frames,0)+r.edits.reduce((a,e)=>a+e.frames_removed,0)||1;
+ let rec="",exp="";const per=tot/cells;const parts=[];let ei=0;
+ r.segments.forEach((s,i)=>{if(i&&r.edits.some(e=>e.after_export_frame===r.segments[i-1].export_frames[1])){const e=r.edits[ei++];parts.push(["cut",e.frames_removed])}parts.push([s.kind==="matched"?"m":s.only_surviving_copy?"only":"x",s.frames])});
+ for(const [k,f] of parts){const n=Math.max(1,Math.round(f/per));for(let i=0;i<n;i++){rec+=k==="cut"?`<i class="cut"></i>`:k==="only"?`<i class="gone"></i>`:`<i></i>`;exp+=k==="cut"?`<i class="gone"></i>`:k==="only"?`<i class="only"></i>`:`<i></i>`}}
+ const n=(rec.match(/<i/g)||[]).length;return `<div class="film fs-rec" style="grid-template-columns:repeat(${n},1fr)">${rec}</div><div class="film fs-exp" style="grid-template-columns:repeat(${n},1fr);margin-top:4px">${exp}</div>`}
+function tProv(c,F){const P=c.provenance||[],fs=c.evidence_items.filter(e=>e.filesystem);
+ let h=P.length||fs.length?`<div class="col" style="gap:4px"><h2>Provenance</h2><p class="note">Every frame of every export is matched bit for bit (H.264 slice hashes) against recorder footage. That finds exact copies, removed seconds, and exports that are now the only surviving copy.</p></div>`:`<div class="card empty">No exports or removable media in this case.</div>`;
+ for(const r of P){const k=c.byClip[r.export]||{},src=c.byClip[r.source_clip]||{};const tone=r.edits.length?"crit":r.export_only.some(s=>s.only_surviving_copy)?"warn":"ok";
+  h+=`<div class="card"><div class="hd"><h3 class="mono" style="font-size:13px">${esc(r.file||r.export)}</h3><span class="sp"></span><span class="chip c-${tone}">${tone==="crit"?"edited":tone==="warn"?"only surviving copy":"exact copy"}</span></div>
+  <div style="font:650 17px/1.3 var(--disp);color:${tone==="crit"?"var(--crit)":tone==="warn"?"var(--warn)":"var(--ok)"}">${esc(r.verdict)}</div>
+  <div class="tiny mut" style="margin-top:4px">${esc(r.method)} · ${n0(r.frames_matched)}/${n0(r.frames)} frames matched${src.id?` · source ${esc(src.device)} · ${esc(src.camera)}`:""}</div>
+  <div style="margin:14px 0 6px"><div class="row tiny mut" style="justify-content:space-between"><span>Recorder (${esc(src.device||"")})</span><span>${hmsms(r.segments[0]&&r.segments[0].from_ms)} → ${hmsms(r.segments.length&&r.segments[r.segments.length-1].to_ms)}</span></div>${filmstrip(r)}<div class="row tiny mut" style="justify-content:space-between;margin-top:4px"><span>Export (as found on the stick)</span><span>${r.edits.length?`<b style="color:var(--crit)">gap = frames missing from the export</b>`:r.export_only.some(s=>s.only_surviving_copy)?`<b style="color:var(--warn)">amber = footage the recorder no longer holds</b>`:"bit-identical"}</span></div></div>
+  <details><summary>segment table</summary><table><tr><th>Segment</th><th>Recorder time</th><th>Frames</th><th>Meaning</th></tr>${r.segments.map(s=>`<tr><td>${s.kind==="matched"?`<span class="chip c-ok">bit-identical</span>`:`<span class="chip c-warn">export only</span>`}</td><td class="mono">${hmsms(s.from_ms)} – ${hmsms(s.to_ms)}</td><td class="num">${s.frames}</td><td class="small">${s.kind==="matched"?`= ${esc(s.recorder_clip)} frames ${s.recorder_frames.join("–")}`:s.only_surviving_copy?"recorder holds no footage for this period: the export is the only surviving copy":"recorder period exists but frames differ"}</td></tr>`).join("")}
+  ${r.edits.map(e=>`<tr><td><span class="chip c-crit">removed</span></td><td class="mono">${hmsms(e.recorder_from_ms)} – ${hmsms(e.recorder_to_ms)}</td><td class="num">${e.frames_removed}</td><td class="small">${esc(e.summary)}</td></tr>`).join("")}</table></details>
+  <div class="row" style="margin-top:12px"><span class="eyebrow">Edit-reveal player · both locked to the recorder clock</span><span class="sp"></span><button class="btn sm pri rvplay" data-r="${P.indexOf(r)}">${ico("play")}Play</button>${r.edits.length?`<button class="btn sm rvcut" data-r="${P.indexOf(r)}">Jump to the cut</button>`:""}<span class="mono small rvclk" data-r="${P.indexOf(r)}"></span></div>
+  <div class="grid g2" style="margin-top:8px"><div class="rvbox"><div class="eyebrow" style="margin-bottom:6px">Export (as found)</div>${k.mp4_file?`<video class="rvexp" data-r="${P.indexOf(r)}" muted playsinline src="${F("clips/"+k.mp4_file)}"></video>`:""}<div class="rvover rvexpo" data-r="${P.indexOf(r)}"></div></div>
+  <div class="rvbox"><div class="eyebrow" style="margin-bottom:6px">Recorder · ${esc(src.camera||"")}</div>${src.mp4_file?`<video class="rvrec" data-r="${P.indexOf(r)}" muted playsinline src="${F("clips/"+src.mp4_file)}"></video>`:""}<div class="rvover rvreco" data-r="${P.indexOf(r)}"></div></div></div></div>`}
+ for(const e of fs){for(const d of e.filesystem.deleted)h+=`<div class="card" style="border-color:${d.recoverable?"#c5e3d0":"var(--crit)"}"><div class="hd"><h3>Deleted file on ${esc(e.name)}</h3><span class="sp"></span><span class="chip ${d.recoverable?"c-ok":"c-crit"}">${esc(d.verdict||"")}</span></div><div class="mono" style="font-size:14px;font-weight:600">${esc(d.path)}</div>
+  <div class="grid g3" style="margin-top:12px"><div><div class="eyebrow">Deleted at (UTC)</div><div style="font:650 16px var(--disp);margin-top:4px">${esc((d.deleted_at||"unknown").replace("T"," ").slice(0,23))}</div><div class="tiny mut">${esc(d.deleted_at_basis)}</div></div>
+  <div><div class="eyebrow">Clusters</div><div class="small" style="margin-top:4px">${n0((d.clusters||{}).count)} clusters · ${n0((d.clusters||{}).overwritten)} overwritten</div></div><div><div class="eyebrow">SHA-256</div><div class="mono tiny" style="word-break:break-all;margin-top:4px">${esc((d.hash||{}).sha256||"")}</div></div></div>
+  <div style="margin-top:10px">${d.checks.map(k=>`<div class="small"><b style="color:${k.ok?"var(--ok)":"var(--crit)"}">${k.ok?"✓":"✗"}</b> <b>${esc(k.check)}</b> <span class="mut">${esc(k.detail)}</span></div>`).join("")}</div>
+  <details><summary>change-journal history</summary><table>${(d.journal||[]).map(j=>`<tr><td class="mono">${esc(j.time)}</td><td>${j.reasons.map(r=>`<span class="chip ${r==="FILE_DELETE"?"c-crit":r==="FILE_CREATE"?"c-ok":"c-info"}">${r}</span>`).join(" ")}</td></tr>`).join("")}</table></details></div>`;
+  h+=`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>All files on ${esc(e.name)}</h3><span class="tiny mut">${esc(e.filesystem.filesystem)}</span></div><div class="tblwrap"><table><tr><th>Path</th><th>Size</th><th>Modified</th><th>Status</th></tr>${e.filesystem.files.filter(f=>!f.dir).map(f=>`<tr class="${f.deleted?"del":""}"><td class="mono">${esc(f.path)}</td><td class="num">${size(f.size)}</td><td class="mono tiny">${esc(f.modified||"")}</td><td>${f.deleted?`<span class="chip c-crit">deleted</span>`:c.findings.some(x=>x.kind==="disguised-file"&&x.summary.includes(f.name))?`<span class="chip c-lead">disguised video</span>`:`<span class="chip c-n">live</span>`}</td></tr>`).join("")}</table></div></div>`}
+ $("#tabc").innerHTML=h;
+ // edit-reveal: one recorder clock T drives both videos; inside a removed span the export shows what is missing
+ P.forEach((r,i)=>{const ex=$(`.rvexp[data-r="${i}"]`),rc=$(`.rvrec[data-r="${i}"]`);if(!ex)return;const k=c.byClip[r.export]||{},src=c.byClip[r.source_clip]||{},fps=k.fps||10;
+  const t0=r.segments[0].from_ms,t1=r.segments[r.segments.length-1].to_ms;let T=t0,play=false,last=0;
+  const seg=t=>r.segments.find(s=>t>=s.from_ms&&t<=s.to_ms+100),cut=t=>r.edits.find(e=>t>=e.recorder_from_ms&&t<=e.recorder_to_ms+100);
+  const eo=$(`.rvexpo[data-r="${i}"]`),ro=$(`.rvreco[data-r="${i}"]`),clk=$(`.rvclk[data-r="${i}"]`);
+  function sync(){const s=seg(T),e=cut(T);clk.textContent="recorder "+hmsms(T);
+   if(e){ex.pause();eo.innerHTML=`<b>${e.seconds_removed.toFixed(1)} s REMOVED</b><span>this export skips ${hmsms(e.recorder_from_ms)} – ${hmsms(e.recorder_to_ms)}</span>`;eo.className="rvover rvexpo on crit"}
+   else if(s){const want=(s.export_frames[0]+(T-s.from_ms)/1000*fps)/fps;if(Math.abs(ex.currentTime-want)>.3)ex.currentTime=want;eo.className="rvover rvexpo"}
+   if(rc){const inrec=src.start_ms&&T>=src.start_ms&&T<=src.end_ms;if(inrec){const want=(T-src.start_ms)/1000;if(Math.abs(rc.currentTime-want)>.3)rc.currentTime=want;ro.className="rvover rvreco"+(e?" on edge":"");ro.innerHTML=e?`<span>what was cut</span>`:""}
+    else{rc.pause();ro.className="rvover rvreco on warn";ro.innerHTML=`<b>NO RECORDER FOOTAGE</b><span>overwritten after the format · the export is the only copy</span>`}}
+   for(const v of [ex,rc]){if(!v)continue;const hidden=v===ex?!!e:!(src.start_ms&&T>=src.start_ms&&T<=src.end_ms);if(play&&!hidden&&v.paused)v.play().catch(()=>{});if(!play&&!v.paused)v.pause()}}
+  const loop=now=>{if(!document.body.contains(ex))return;if(play){T+=now-last;if(T>=t1){T=t1;play=false;$(`.rvplay[data-r="${i}"]`).innerHTML=ico("play")+"Play"}sync()}last=now;requestAnimationFrame(loop)};requestAnimationFrame(loop);
+  $(`.rvplay[data-r="${i}"]`).onclick=b=>{play=!play;last=performance.now();if(T>=t1)T=t0;b.currentTarget.innerHTML=ico(play?"pause":"play")+(play?"Pause":"Play");sync()};
+  const cb=$(`.rvcut[data-r="${i}"]`);if(cb)cb.onclick=()=>{T=r.edits[0].recorder_from_ms-3000;play=true;last=performance.now();$(`.rvplay[data-r="${i}"]`).innerHTML=ico("pause")+"Pause";sync()};
+  ex.addEventListener("loadedmetadata",sync,{once:true})})}
+
+// ---------------------------------------------------------------- time + robustness
+function tTime(c){const cams=[...new Map(c.clips.filter(k=>k.start_ms&&k.raw_file).map(k=>[k.channel,k])).values()];
+ const steps={};for(const f of c.findings){const ch=f.detail&&f.detail.channel;if(f.kind==="clock-change")steps[ch]=f.detail.steps;}
+ const acts=(((c.ai.layers||{}).L4||{}).activities||[]).filter(a=>c.byClip[a.clip]&&c.byClip[a.clip].evidence!=="E3");
+ const camList=[...new Set(acts.map(a=>a.camera))];
+ $("#tabc").innerHTML=`<div class="col" style="gap:4px"><h2>Kaalsthirta <span class="mut" style="font-weight:500;font-size:15px">· clocks, corrections, robustness</span></h2><p class="note">The on-screen clock is never trusted as truth. Each line is overlay time minus recorder time: a step is a clock change, a flat offset is drift. Every event in this case uses the recorder clock.</p></div>
+ <div class="card" id="kaal"></div><div class="card"><div class="hd"><h3>Camera clocks against the recorder clock</h3></div><div id="tc"></div></div>
+ ${acts.length?`<div class="card"><div class="hd"><h3>Timeline robustness</h3><span class="tiny mut">how wrong would one camera's clock have to be to reverse the order of events?</span></div>
+ <div class="grid" style="grid-template-columns:minmax(260px,1fr) minmax(0,2fr);align-items:start">
+  <div class="col"><label class="lb" style="margin:0">Camera to shift</label><select id="rcam">${camList.map(x=>`<option>${esc(x)}</option>`).join("")}</select>
+   <label class="lb" style="margin:6px 0 0">Clock error: <b id="rv" class="mono">0 s</b></label><input type="range" id="rs" min="-900" max="900" step="5" value="0" style="padding:0;accent-color:var(--acc)">
+   <div class="verdict" style="margin-top:6px"><div class="r"><div><div class="l">Cross-camera event pairs (within 5 min)</div><div class="v" id="rpairs">—</div></div></div><div class="r"><div><div class="l">Order reversed at this error</div><div class="v" id="rflip">—</div></div></div><div class="r"><div><div class="l" id="rmeasl">If this camera's burned-in clock had been trusted</div><div class="v" id="rmin">—</div></div></div></div>
+   <div class="tiny mut">Markers on the chart are the drifts Sarvadristhi measured from the burned-in clocks. Had the overlay clocks been trusted instead of the recorder clock, the order of these pairs would have changed.</div></div>
+  <div id="rchart"></div></div></div>`:""}
+ <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Time basis of every clip</h3></div><div class="tblwrap"><table><tr><th>Clip</th><th>Camera</th><th>Recorder time</th><th>Source</th><th>Uncertainty</th><th>Overlay drift</th></tr>${c.clips.map(k=>`<tr class="click" onclick="select('clip','${k.id}')"><td class="mono">${esc(k.id)}</td><td>${esc(k.label)}</td><td class="mono">${hms(k.start_ms)}–${hms(k.end_ms)}</td><td>${esc(k.time_source||"none")}</td><td>${k.time_uncertainty_ms!=null?"± "+(k.time_uncertainty_ms/1000).toFixed(1)+" s":`<span class="chip c-warn">untimed</span>`}</td><td class="num">${k.drift_s!=null?(k.drift_s>0?"+":"")+k.drift_s+" s":"—"}</td></tr>`).join("")}</table></div></div>`;
+ if(cams.length){const W=$("#tc").clientWidth||900,H=280,m={l:60,r:250,t:10,b:28};const t0=d3.min(cams,k=>k.start_ms),t1=d3.max(cams,k=>k.end_ms);
+  const series=cams.map(k=>{const st=steps[k.channel];const d=k.drift_s||0;let pts;if(st&&st.length){pts=[[t0,st[0].before_s]];for(const s of st){pts.push([s.between_ms[0],s.before_s],[s.between_ms[1],s.after_s])}pts.push([t1,st[st.length-1].after_s])}else pts=[[t0,d],[t1,d]];return{k,pts}});
+  const x=d3.scaleUtc().domain([t0,t1]).range([m.l,W-m.r]),y=d3.scaleLinear().domain([Math.min(-100,d3.min(series,s=>d3.min(s.pts,p=>p[1]))-40),Math.max(100,d3.max(series,s=>d3.max(s.pts,p=>p[1]))+40)]).range([H-m.b,m.t]);
+  const svg=d3.select("#tc").append("svg").attr("width",W).attr("height",H);
+  svg.append("g").selectAll("line").data(y.ticks(6)).join("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",d=>y(d)).attr("y2",d=>y(d)).attr("stroke","#eef0eb");
+  svg.append("g").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(6).tickFormat(d3.utcFormat("%H:%M:%S")));
+  svg.append("g").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6).tickFormat(v=>v+" s"));svg.selectAll(".domain,.tick line").style("stroke","#c8cec5");
+  svg.append("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",y(0)).attr("y2",y(0)).attr("stroke","#949b94").attr("stroke-dasharray","3,3");
+  series.forEach(s=>{s.col=colorOf(s.k.camera);svg.append("path").attr("d",d3.line().curve(d3.curveStepAfter).x(p=>x(p[0])).y(p=>y(p[1]))(s.pts)).attr("fill","none").attr("stroke",s.col).attr("stroke-width",2.4)});
+  const labs=series.map(s=>({s,y:y(s.pts[s.pts.length-1][1])+4})).sort((a,b)=>a.y-b.y);for(let i=1;i<labs.length;i++)labs[i].y=Math.max(labs[i].y,labs[i-1].y+13);
+  for(const l of labs){const v=l.s.pts[l.s.pts.length-1][1];svg.append("text").attr("x",W-m.r+8).attr("y",l.y).text(`${l.s.k.device} · ${l.s.k.camera}: ${v>0?"+":""}${v} s`).style("fill",l.s.col).style("font-weight",600)}}
+ if(acts.length)robust(c,acts);kaalshodhanCard(c)}
+function robust(c,acts){const pairs=[];const A=acts.map(a=>({cam:a.camera,t:a.from_ms+1000,id:a.id}));
+ for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){if(A[i].cam===A[j].cam)continue;const d=A[j].t-A[i].t;if(Math.abs(d)<=300000&&d!==0)pairs.push([A[i],A[j]])}
+ const drift={};for(const k of c.clips)if(k.drift_s!=null)drift[k.label]=k.drift_s;
+ const steps={};for(const f of c.findings)if(f.kind==="clock-change"){const k=c.clips.find(x=>x.channel===(f.detail||{}).channel);if(k&&f.detail.steps&&f.detail.steps.length)steps[k.label]=f.detail.steps[0].after_s}
+ const flips=(cam,s)=>pairs.filter(([a,b])=>{if(a.cam!==cam&&b.cam!==cam)return false;const d0=b.t-a.t,d1=(b.t+(b.cam===cam?s*1000:0))-(a.t+(a.cam===cam?s*1000:0));return Math.sign(d0)!==Math.sign(d1)}).length;
+ const W=$("#rchart").clientWidth||640,H=300,m={l:46,r:16,t:22,b:34};const xs=d3.scaleLinear().domain([-900,900]).range([m.l,W-m.r]);
+ const svg=d3.select("#rchart").append("svg").attr("width",W).attr("height",H);let path,cur,mk;
+ function draw(cam){svg.selectAll("*").remove();const data=d3.range(-900,905,10).map(s=>[s,flips(cam,s)]);const mx=d3.max(data,d=>d[1])||1;const ys=d3.scaleLinear().domain([0,mx]).nice().range([H-m.b,m.t]);
+  svg.append("g").selectAll("line").data(ys.ticks(5)).join("line").attr("x1",m.l).attr("x2",W-m.r).attr("y1",d=>ys(d)).attr("y2",d=>ys(d)).attr("stroke","#eef0eb");
+  svg.append("path").attr("d",d3.area().x(d=>xs(d[0])).y0(H-m.b).y1(d=>ys(d[1]))(data)).attr("fill","#c3352b").attr("opacity",.10);
+  svg.append("path").attr("d",d3.line().x(d=>xs(d[0])).y(d=>ys(d[1]))(data)).attr("fill","none").attr("stroke","#c3352b").attr("stroke-width",2);
+  svg.append("g").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(xs).ticks(9).tickFormat(v=>(v>0?"+":"")+v+" s"));svg.append("g").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(ys).ticks(5));svg.selectAll(".domain,.tick line").style("stroke","#c8cec5");
+  svg.append("text").attr("x",m.l).attr("y",H-2).text("clock error applied to this camera →").style("font-size","10px");svg.append("text").attr("x",m.l+6).attr("y",m.t-4).text("event pairs whose order reverses");
+  const marks=[];if(drift[cam])marks.push(["measured drift",drift[cam]]);if(steps[cam])marks.push(["measured clock step",steps[cam]]);
+  for(const [lab,v] of marks){svg.append("line").attr("x1",xs(v)).attr("x2",xs(v)).attr("y1",m.t).attr("y2",H-m.b).attr("stroke","#111513").attr("stroke-dasharray","4,3");svg.append("text").attr("x",xs(v)+(v<0?6:-6)).attr("text-anchor",v<0?"start":"end").attr("y",m.t+30).text(`${lab} ${v>0?"+":""}${v} s`).style("fill","#111513").style("font-weight",600)}
+  cur=svg.append("line").attr("y1",m.t).attr("y2",H-m.b).attr("stroke","#14704d").attr("stroke-width",2);
+  const mine=pairs.filter(([a,b])=>a.cam===cam||b.cam===cam);const meas=steps[cam]!=null?steps[cam]:drift[cam];
+  $("#rpairs").innerHTML=`${n0(mine.length)}<small>involving this camera</small>`;
+  if(meas){$("#rmeasl").textContent=`If its burned-in clock (${meas>0?"+":""}${meas} s) had been trusted`;$("#rmin").innerHTML=`${flips(cam,meas)}<small>pairs reversed · the recorder clock avoids this</small>`}else{$("#rmeasl").textContent="Burned-in clock for this camera";$("#rmin").innerHTML=`agrees<small>within ±1 s; no reversal from clock error</small>`}return}
+ const upd=()=>{const cam=$("#rcam").value,s=+$("#rs").value;$("#rv").textContent=(s>0?"+":"")+s+" s";cur.attr("x1",xs(s)).attr("x2",xs(s));const f=flips(cam,s);$("#rflip").innerHTML=`${f}<small>pair${f===1?"":"s"}</small>`;$("#rflip").style.color=f?"#ff8f80":"#fff"};
+ $("#rcam").onchange=()=>{draw($("#rcam").value);upd()};$("#rs").oninput=upd;
+ const pick=Object.keys(steps).find(k=>[...$("#rcam").options].some(o=>o.value===k))||Object.keys(drift).find(k=>drift[k]&&[...$("#rcam").options].some(o=>o.value===k));if(pick)$("#rcam").value=pick;draw($("#rcam").value);upd()}
+
+// ---------------------------------------------------------------- AI reasoning
+function tAI(c,F){const A=c.ai;if(!A||!A.layers){$("#tabc").innerHTML=`<div class="card empty">AI layers were not run for this case.</div>`;return}
+ const {L1,L2,L3,L4}=A.layers,ok3=L3.descriptions.filter(d=>d.ok),agree=ok3.length?ok3.reduce((a,d)=>a+d.cross_check.agreement,0)/ok3.length:0,byTrack={};for(const t of L2.tracks)byTrack[t.id]=t;
+ const cls={};for(const t of L2.tracks)cls[t.cls]=(cls[t.cls]||0)+1;const acts=L4.activities||[];const ac={};for(const a of acts)ac[a.type]=(ac[a.type]||0)+1;
+ $("#tabc").innerHTML=`<div class="banner info">${esc(A.disclaimer)}</div><div class="layers">
+ <div class="layer" style="border-top-color:var(--l1)" onclick="document.getElementById('s1').scrollIntoView({behavior:'smooth'})"><div class="eyebrow" style="color:var(--l1)">L1 · Motion</div><div class="big">${L1.events.length}</div><div class="tiny mut">events · ${L1.unexplained} unexplained by L2</div></div>
+ <div class="layer" style="border-top-color:var(--l2)" onclick="document.getElementById('s2').scrollIntoView({behavior:'smooth'})"><div class="eyebrow" style="color:var(--l2)">L2 · Perception</div><div class="big">${L2.tracks.length}</div><div class="tiny mut">${Object.entries(cls).map(([k,v])=>v+" "+k).join(", ")}</div><div class="tiny dim">${esc(L2.backend)}</div></div>
+ <div class="layer" style="border-top-color:var(--l3)" onclick="document.getElementById('s3').scrollIntoView({behavior:'smooth'})"><div class="eyebrow" style="color:var(--l3)">L3 · Scene understanding</div><div class="big">${ok3.length}</div><div class="tiny mut">described · ${pct(agree)} agree with L2</div><div class="tiny dim">${esc(L3.model)}</div></div>
+ <div class="layer" style="border-top-color:var(--l4)" onclick="document.getElementById('s4').scrollIntoView({behavior:'smooth'})"><div class="eyebrow" style="color:var(--l4)">L4 · Context &amp; decisions</div><div class="big">${L4.entities.filter(e=>e.cameras.length>1).length}</div><div class="tiny mut">cross-camera entities · ${acts.length} activities · ${L4.insights.length} leads</div></div></div>
+ <div class="card"><div class="hd"><h3>Thought log</h3></div><div class="trace">${A.trace.map(t=>`<div class="tr"><span class="lc" style="color:var(--${(t.layer||"L4").slice(0,2).toLowerCase()})">${esc(t.layer)}</span><div class="small"><b>${esc(t.step)}</b> · ${esc(t.what)}${t.seconds!=null?` <span class="dim tiny">(${t.seconds}s)</span>`:""}</div></div>`).join("")}</div></div>
+ <div class="card" id="s4"><div class="hd"><h3 style="color:var(--l4)">L4 · activity events</h3><span class="tiny mut">${Object.entries(ac).map(([k,v])=>`${v} ${k.replace(/_/g," ")}`).join(" · ")}</span></div>
+  <div class="tblwrap" style="max-height:420px;overflow:auto"><table><tr><th>#</th><th>Activity</th><th>Camera</th><th>Recorder time</th><th>Conf.</th><th>Rule fired because</th></tr>${acts.slice(0,80).map(a=>`<tr class="click" onclick="jump(${a.from_ms+500})"><td class="mono">${a.id}</td><td><span class="chip ${a.type.includes("vehicle")?"c-warn":"c-lead"}">${esc(a.type.replace(/_/g," "))}</span></td><td class="small">${esc(a.camera)}</td><td class="mono">${hms(a.from_ms+1000)}</td><td class="num">${a.confidence}</td><td class="tiny">${esc(a.why)}</td></tr>`).join("")}</table></div>
+  <h4 style="margin:14px 0 6px">Entities across cameras (hypotheses for review)</h4>${L4.entities.filter(e=>e.cameras.length>1).slice(0,10).map(e=>`<div class="row" style="margin:8px 0;align-items:flex-start"><b style="color:${colorOf(e.id)};min-width:40px">${e.id}</b>${e.path.map((p,i)=>`${i?'<span class="dim" style="align-self:center">→</span>':""}<div class="th" style="width:118px" onclick="jump(${(byTrack[p.track]||{}).abs_best_ms})"><img src="${F((byTrack[p.track]||{}).crop||"")}"><div class="c">${esc(p.camera)}<br>${p.from}–${p.to}</div></div>`).join("")}</div>`).join("")||`<div class="mut small">None linked.</div>`}
+  <details style="margin-top:8px"><summary>every cross-camera decision</summary><table><tr><th>Pair</th><th style="width:38%">Weighted factors</th><th>Score</th><th>Decision</th></tr>${L4.candidates.slice(0,20).map(p=>{const cols=["#3b6fd8","#0e9488","#d98a0b","#6b48d0","#e07b16"];return `<tr><td class="mono tiny">${p.a}<br>→ ${p.b}</td><td><div class="bar" style="height:10px">${p.factors.map((f,i)=>`<span title="${esc(f.factor)}: ${f.value}×${f.weight}" style="width:${f.value*f.weight*100}%;background:${cols[i]}"></span>`).join("")}</div>${p.factors.map((f,i)=>`<div class="tiny"><b style="color:${cols[i]}">${esc(f.factor)}</b> ${f.value}×${f.weight} · ${esc(f.why)}</div>`).join("")}</td><td><b>${p.score}</b></td><td class="tiny">${esc(p.decision||"")}</td></tr>`}).join("")}</table></details></div>
+ <div class="card" id="s3"><div class="hd"><h3 style="color:var(--l3)">L3 · what the VLM saw and said</h3></div>${L3.descriptions.map(d=>{const t=byTrack[d.track]||{},a=d.answer||{},ck=d.cross_check;return `<div class="grid g2" style="border-top:1px solid var(--line);padding-top:12px;margin-top:12px"><div><img src="${F(t.thumb)}" style="width:100%;border-radius:9px"><div class="tiny mut">${esc(d.track)} · ${esc(t.channel_name)} · ${esc(t.time)}</div></div>
+  <div>${d.ok?`<div style="font:650 16px var(--disp)">${esc(a.subject_class)} · ${esc(a.action)}</div><div class="small">${esc(a.upper_clothing_colour||"")} ${a.lower_clothing_colour?"/ "+esc(a.lower_clothing_colour):""} · carrying ${esc(a.carrying||"—")}</div>
+  <table style="margin-top:8px">${ck.checks.map(x=>`<tr><td class="tiny">${esc(x.what)}</td><td class="tiny">${esc(x.detector)}</td><td class="tiny">${esc(x.vlm)}</td><td>${x.agree?`<span class="chip c-ok">agree</span>`:`<span class="chip c-warn">differ</span>`}</td></tr>`).join("")}</table>${ck.needs_review?`<span class="chip c-warn">needs review</span>`:""}`:`<span style="color:var(--crit)">${esc(d.error)}</span>`}
+  <details><summary>exact prompt and raw answer</summary><pre>SYSTEM: ${esc(d.system)}\n\nUSER: ${esc(d.prompt)}</pre><pre>${esc(d.raw||"")}</pre></details></div></div>`}).join("")||esc(L3.status)}</div>
+ <div class="card" id="s2"><div class="hd"><h3 style="color:var(--l2)">L2 · tracks</h3><span class="tiny mut">strongest 60</span></div><div class="thumbs">${L2.tracks.slice().sort((a,b)=>b.observations*b.max_conf-a.observations*a.max_conf).slice(0,60).map(t=>`<div class="th" onclick="jump(${t.abs_best_ms})"><img src="${F(t.crop)}" loading="lazy"><div class="c"><b>${t.id.split("-").pop()}</b> ${esc(t.cls)} ${t.max_conf}<br>${esc(t.channel_name)}<br>${t.time}${t.face&&t.face.found?" · face":""}</div></div>`).join("")}</div></div>
+ <div class="card pad0" id="s1"><div class="hd" style="padding:14px 18px 0"><h3 style="color:var(--l1)">L1 · motion events</h3></div><div class="tblwrap"><table><tr><th>Clip</th><th>From</th><th>To</th><th>Explained by</th></tr>${L1.events.slice(0,40).map(e=>`<tr class="click" onclick="jump(${e.abs_start_ms})"><td class="mono tiny">${e.clip}</td><td class="mono">${hms(e.abs_start_ms)}</td><td class="mono">${hms(e.abs_end_ms)}</td><td class="tiny">${(e.explained_by||[]).slice(0,4).join(", ")||`<span class="chip c-warn">unexplained</span>`}</td></tr>`).join("")}</table></div></div>`}
+
+// ---------------------------------------------------------------- review + report
+function tReview(c,F){const L=(c.ai.layers||{}).L4;const ins=L?L.insights:[];const R=c.reviews;const tracks=((c.ai.layers||{}).L2||{}).tracks||[];
+ const done=ins.filter(i=>R["lead:"+i.id]).length,acc=ins.filter(i=>(R["lead:"+i.id]||{}).decision==="accepted").length;
+ $("#tabc").innerHTML=`<div class="card"><div class="row"><div class="col" style="gap:3px;flex:1;min-width:280px"><h2>Examiner review of AI leads</h2><div class="note">Machine output is a lead until a human decides. Accepted leads become examiner findings in the report; rejected and unresolved ones are listed for completeness. Every decision is written to the custody chain.</div></div>
+ <span class="chip c-n">${done}/${ins.length} reviewed</span><span class="chip c-ok">${acc} accepted</span><button class="btn pri" id="regen">${ico("doc")}Regenerate report</button>${c.report&&c.report.pdf?`<a class="btn" href="${F("report.pdf")}" target="_blank">PDF</a>`:""}<a class="btn" href="${F("report.html")}" target="_blank">HTML</a></div><div id="regmsg" class="small" style="margin-top:8px"></div></div><div id="exlists" class="col" style="gap:14px"></div>
+ ${ins.map(i=>{const r=R["lead:"+i.id];return `<div class="card" style="${r?`box-shadow:inset 4px 0 0 ${r.decision==="accepted"?"var(--ok)":r.decision==="rejected"?"var(--crit)":"var(--warn)"}`:""}"><div class="row" style="align-items:flex-start">
+  <div style="flex:1;min-width:280px"><div class="row" style="gap:8px"><span class="mono dim">${i.id}</span>${sevChip(i.severity)}<b>${esc(i.title)}</b><span class="tiny mut">${esc(i.rule)} · conf ${i.confidence}</span></div><div class="small" style="margin:6px 0">${esc(i.statement)}</div>
+  <div class="row" style="gap:6px">${i.citations.slice(0,5).map(x=>`<button class="pill" style="cursor:pointer;padding:2px 9px 2px 2px" onclick="jump(${((tracks.find(t=>t.id===x.track))||{}).abs_best_ms||0})"><img src="${F(x.thumb)}" style="width:26px;height:26px;border-radius:5px;object-fit:cover">${esc(x.camera)} ${x.time}</button>`).join("")}</div></div>
+  <div style="width:290px"><input id="note_${i.id}" placeholder="Note (optional)" value="${esc((r||{}).note||"")}"><div class="row" style="gap:6px;margin-top:8px">${["accepted","rejected","unresolved"].map(d=>`<button class="btn sm ${r&&r.decision===d?"pri":""}" onclick="decide('${i.id}','${d}')">${d[0].toUpperCase()+d.slice(1)}</button>`).join("")}</div>${r?`<div class="tiny mut" style="margin-top:5px">${esc(r.decision)} · ${esc(r.utc)}</div>`:""}</div></div></div>`}).join("")||`<div class="card empty">No AI leads in this case.</div>`}`;
+ $("#regen").onclick=async()=>{$("#regmsg").textContent="Rendering…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/report`,{method:"POST",body:"{}"});$("#regmsg").innerHTML=r.ok?`<span style="color:var(--ok)">✓ Report regenerated with key frames, Sakshilekh, Kaalshodhan, Khandmudra and Punarnirmiti, and logged to custody.</span>${r.hashes?`<div class="mono tiny" style="margin-top:4px">${Object.entries(r.hashes).map(([k,v])=>`${k} sha256 ${v}`).join("<br>")}</div>`:""}`:esc(r.error||"failed")};examinerLists(c)}
+async function decide(id,d){const i=CASE.ai.layers.L4.insights.find(x=>x.id===id);const r=await api(`/api/case/${encodeURIComponent(CDIR)}/review`,{method:"POST",body:JSON.stringify({key:"lead:"+id,decision:d,note:$("#note_"+id).value,examiner:localStorage.exm||CASE.case.examiner,statement:i.statement})});
+ if(r.ok){CASE.reviews=r.reviews;tReview(CASE,window.F);sideHTML()}}
+
+// ---------------------------------------------------------------- custody + replay capsule
+async function tCustody(c,F){const e=c.custody_now.entries||c.custody.entries;
+ $("#tabc").innerHTML=`<div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr);align-items:start">
+ <div class="card" id="capbox"><div class="empty">Loading replay capsule…</div></div>
+ <div class="verdict"><div class="r"><div><div class="l">Case chain, re-verified now</div><div class="v">${c.custody_now.ok?"Intact":"Broken"}<small>${esc(c.custody_now.status)}</small></div></div><span class="ic ${c.custody_now.ok?"":"bad"}">${ico("shield")}</span></div>
+  ${c.evidence_items.map(x=>`<div class="r"><div><div class="l">${esc(x.id)} · ${esc(x.name)}</div><div class="v" style="font-size:15px">${x.custody_ok?"✓":"✗"} ${esc(x.custody)}</div></div></div>`).join("")}
+  <div class="r"><div><div class="l">Report</div><div class="v" style="font-size:15px">${c.report&&c.report.pdf?`<a href="${F("report.pdf")}" target="_blank" style="color:var(--mint)">PDF</a> · `:""}<a href="${F("report.html")}" target="_blank" style="color:var(--mint)">HTML</a><small>BSA s.63(4) data sheet in Annex A</small></div></div></div></div></div>
+ <div class="card"><div class="hd"><h3>Shrinkhalapatra</h3><span class="tiny mut">hash-chained custody: each block seals the one before it</span></div><div class="chainrow">${e.map((x,i)=>`${i?'<span class="arrow">→</span>':""}<div class="blk" title="${esc(JSON.stringify(x.details))}"><div class="h">#${x.seq} ${esc(x.action)}</div><div class="m">${esc(x.utc.slice(11,19))} · ${x.hash.slice(0,10)}…</div><div class="m dim">prev ${x.prev.slice(0,10)}…</div></div>`).join("")}</div></div>`;
+ capPanel()}
+async function capPanel(res){const box=$("#capbox");if(!box)return;const s=await api(`/api/case/${encodeURIComponent(CDIR)}/capsule`);
+ if(!s.exists){box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Punarnirmiti</h3><div class="tiny mut">replay capsule · not built yet for this case</div></div></div>
+  <p class="note">A capsule records the exact byte ranges of the preserved images behind every recovered clip, in order, with the hash recorded at analysis time, and seals the list with this workstation's Ed25519 key. A reviewer with the capsule and the images can rebuild every clip without Sarvadristhi's parsers.</p>
+  <div class="row" style="margin-top:12px"><button class="btn pri" id="capbuild">${ico("lock")}Build and seal capsule</button><span class="tiny mut" id="capmsg"></span></div>`;
+  $("#capbuild").onclick=async()=>{$("#capbuild").disabled=true;$("#capmsg").textContent="Re-running parsers on the preserved images and checking every clip…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/capsule`,{method:"POST",body:"{}"});
+   if(r.error){$("#capmsg").textContent=r.error;$("#capbuild").disabled=false;return}toast(`Capsule sealed: ${r.built_ok}/${r.clips} clips self-checked`);capPanel()};return}
+ box.innerHTML=`<div class="row"><span class="feat"><span class="ico">${ico("replay")}</span></span><div><h3>Punarnirmiti</h3><div class="tiny mut">replay capsule · sealed ${esc(s.created_utc)} · key <span class="mono">${esc(s.key_fingerprint)}</span></div></div><span class="sp"></span><span class="chip ${s.signature_ok?"c-ok":"c-crit"}">${s.signature_ok?"signature valid":"signature INVALID"}</span></div>
+  <div class="grid g3" style="margin:14px 0"><div><div class="eyebrow">Clips</div><div style="font:650 24px var(--disp)">${s.clips}</div></div><div><div class="eyebrow">Byte ranges</div><div style="font:650 24px var(--disp)">${n0(s.ranges)}</div></div><div><div class="eyebrow">Images</div><div style="font:650 24px var(--disp)">${s.items.length}</div></div></div>
+  <div class="note">${esc(s.definition)}</div>
+  <div class="row" style="margin-top:14px"><button class="btn pri" id="rp">${ico("replay")}Replay now</button><select id="tamper" style="width:auto;max-width:260px"><option value="">no tampering</option>${s.clip_ids.map(id=>`<option value="${esc(id)}">simulate a flipped byte in ${esc(id)}</option>`).join("")}</select><span class="tiny mut" id="rpmsg"></span></div>
+  <div id="rpres" style="margin-top:14px"></div>`;
+ $("#rp").onclick=async()=>{$("#rp").disabled=true;$("#rpmsg").textContent="Hashing images and rebuilding every clip from its byte ranges…";const t=$("#tamper").value;
+  const r=await api(`/api/case/${encodeURIComponent(CDIR)}/replay`,{method:"POST",body:JSON.stringify({tamper:t})});$("#rp").disabled=false;$("#rpmsg").textContent="";
+  if(r.error){$("#rpres").innerHTML=`<div class="banner">${esc(r.error)}</div>`;return}const all=r.reproduced===r.total;
+  $("#rpres").innerHTML=`<div class="verdict" style="margin-bottom:12px"><div class="r"><div><div class="l">Clips reproduced from the images</div><div class="v">${r.reproduced} / ${r.total}<small>in ${r.seconds} s</small></div></div><span class="ic ${all?"":"bad"}">${ico(all?"check":"x")}</span></div>
+   <div class="r"><div><div class="l">Images match the seizure hashes</div><div class="v" style="font-size:16px">${r.items.map(i=>`${esc(i.id)} ${i.sha256_ok?"✓":"✗"}`).join(" · ")}</div></div></div></div>
+   <div class="tblwrap" style="max-height:360px;overflow:auto"><table><tr><th>Clip</th><th>Kind</th><th>Ranges</th><th>Bytes</th><th>Rebuilt SHA-256</th><th>Result</th></tr>${r.clips.map(k=>`<tr class="${k.ok?"":"del"}"><td class="mono">${esc(k.id)}</td><td class="tiny">${esc(k.kind)}</td><td class="num">${n0(k.ranges)}</td><td class="num">${size(k.bytes)}</td><td class="mono tiny">${esc((k.sha256||"").slice(0,20))}…</td><td>${k.ok?`<span class="chip c-ok">✓ identical</span>`:`<span class="chip c-crit">✗ ${esc(k.why||"")}</span>`}</td></tr>`).join("")}</table></div>
+   <div class="tiny mut" style="margin-top:8px">Logged to the custody chain as “replay-verified”.${t?" The flipped byte existed only in memory; the evidence image was not touched.":""}</div>`;
+  toast(all?`All ${r.total} clips reproduced byte for byte`:`${r.total-r.reproduced} clip(s) did not reproduce`)}}
+// ================================================================ Kanikadarpan: frame-to-byte X-ray
+const LVLC={"index-confirmed":"#1f9d61","carved + timestamp":"#d98a0b","content-only":"#d4467b"};
+const FIELDC=["#7fe3a6","#ffd27a","#9cc3ff","#ff9f8a","#c9a8ff","#7ad7d0","#f2b8d8","#b7e07a"];
+async function tXray(c,F){const vids=c.clips.filter(k=>k.mp4_file);const pick=(window._arg&&c.byClip[window._arg])||vids.find(k=>k.evidence_level!=="content-only"&&k.start_ms)||vids[0];window._arg=null;
+ if(!pick){$("#tabc").innerHTML=`<div class="card empty">No playable clips.</div>`;return}
+ $("#tabc").innerHTML=`<div class="row"><div class="col" style="gap:4px;flex:1;min-width:300px"><h2>Kanikadarpan <span class="mut" style="font-weight:500;font-size:15px">· frame-to-byte X-ray</span></h2>
+  <p class="note">Play a recovered clip and watch where each frame lives on the seized disk. The ribbons follow the frame on screen; the hex panel reads that frame's first bytes from the original image (read-only) and decodes the recorder's own header.</p></div>
+  <select id="xclip" style="width:auto;max-width:360px">${vids.map(k=>`<option value="${esc(k.id)}" ${k.id===pick.id?"selected":""}>${esc(k.label)} · ${esc(k.id)}</option>`).join("")}</select></div>
+ <div class="xr"><div class="col"><div class="vtile" style="min-height:0"><video id="xv" src="${F("clips/"+pick.mp4_file)}" poster="${stillURL(pick,1)}" muted playsinline controls></video><span class="osd" style="top:10px;bottom:auto;left:auto;right:10px" id="xosd"></span></div>
+   <div class="row"><button class="btn pri" id="xplay">${ico("play")}Play</button><button class="btn" id="xprev">◀ frame</button><button class="btn" id="xnext">frame ▶</button>
+   <select id="xrate" style="width:auto"><option value="0.25">0.25×</option><option value="0.5" selected>0.5×</option><option value="1">1×</option></select><span class="sp"></span><span class="tiny mut" id="xmode"></span></div></div>
+  <div class="xpanel"><div class="eyebrow" style="color:var(--mint)">Whole disk · ${esc(pick.evidence||"E1")}</div><canvas id="xdisk" height="54"></canvas>
+   <div class="row tiny" style="justify-content:space-between;color:var(--deepmut)"><span>0x0</span><span id="xsize"></span></div>
+   <div class="eyebrow" style="color:var(--mint);margin-top:10px">Neighbourhood · frames around the playhead</div><canvas id="xzoom" height="64"></canvas>
+   <div class="xread" id="xread">Loading frames…</div>
+   <div class="eyebrow" style="color:var(--mint);margin-top:6px">Original bytes at this frame</div><div class="xhex" id="xhex"></div><div id="xfields" class="xfields"></div></div></div>`;
+ $("#xclip").onchange=()=>{window._arg=$("#xclip").value;tXray(c,F)};
+ const X=await api(`/api/case/${encodeURIComponent(CDIR)}/xray/${encodeURIComponent(pick.id)}`);const v=$("#xv");v.playbackRate=0.5;
+ const dm=await api(`/api/case/${encodeURIComponent(CDIR)}/diskmap/${pick.evidence||"E1"}?bins=600`).catch(()=>null);
+ const size=X.image_bytes||(dm&&dm.bytes)||1;$("#xsize").textContent=size.toLocaleString()+" bytes";
+ const fr=X.frames||[];const fps=X.fps||pick.fps||10;
+ $("#xmode").textContent=X.mode==="frames"?`${fr.length.toLocaleString()} frames mapped from frames.csv`:X.mode==="runs"?`file clusters: ${X.runs.length} run(s); position proportional to time`:"no byte map for this clip";
+ const COL={"index-confirmed":"#1f9d61","carved + timestamp":"#d98a0b","content-only":"#d4467b","metadata":"#3b6fd8","deleted file":"#d23f31","live file":"#8a948c","empty":"#22352b"};
+ const cd=$("#xdisk"),cz=$("#xzoom");let cur=-1,trail=[],hexCache={},busy=false;
+ // the CSS height is fixed once; setting canvas.height rewrites the height attribute, so never read it back
+ function sizeCanvas(cv){if(!cv.dataset.h){cv.dataset.h=cv.getAttribute("height");cv.style.height=cv.dataset.h+"px"}const h=+cv.dataset.h,w=cv.clientWidth||600,dpr=devicePixelRatio||1;
+  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return [g,w,h]}
+ function posAt(t){if(X.mode==="frames"){let lo=0,hi=fr.length-1,ms=t*1000;if(hi<0)return null;while(lo<hi){const m=(lo+hi+1)>>1;if(fr[m][0]<=ms)lo=m;else hi=m-1}return lo}
+  return null}
+ function runOffset(t){const tot=X.runs.reduce((a,r)=>a+r[1],0),want=Math.min(tot-1,Math.max(0,(t/(v.duration||1))*tot));let acc=0;for(const [o,n] of X.runs){if(acc+n>want)return o+(want-acc);acc+=n}return X.runs[0][0]}
+ function draw(off,len,key){const [g,w,h]=sizeCanvas(cd);g.fillStyle="#0f1a14";g.fillRect(0,0,w,h);
+  if(dm&&dm.cells){const bw=w/dm.cells.length;for(const c2 of dm.cells){g.fillStyle=COL[c2.cat]||"#333";g.globalAlpha=c2.cat==="empty"?1:.35+.5*Math.max(.2,c2.fill);g.fillRect(c2.b*bw,8,Math.max(1,bw-.5),h-16)}g.globalAlpha=1}
+  if(X.mode==="frames"){g.fillStyle="rgba(127,227,166,.35)";for(let i=0;i<fr.length;i+=Math.max(1,Math.floor(fr.length/600)))g.fillRect(fr[i][1]/size*w,h-6,1,4)}
+  if(X.mode==="runs"){g.fillStyle="rgba(127,227,166,.5)";for(const [o,n] of X.runs)g.fillRect(o/size*w,h-6,Math.max(2,n/size*w),4)}
+  trail.forEach((o,i)=>{g.fillStyle=`rgba(127,227,166,${(i+1)/trail.length*.5})`;g.fillRect(o/size*w-1,4,2,h-8)});
+  if(off!=null){const x=off/size*w;g.shadowColor="#7fe3a6";g.shadowBlur=14;g.fillStyle="#b8ffd2";g.fillRect(x-1.5,0,3,h);g.shadowBlur=0}
+  const [z,zw,zh]=sizeCanvas(cz);z.fillStyle="#0f1a14";z.fillRect(0,0,zw,zh);
+  if(off==null)return;const span=Math.max(256*1024,(len||0)*24),a=off-span/2;
+  const near=X.mode==="frames"?fr.filter(f=>f[1]+f[2]>=a&&f[1]<=a+span):[];
+  for(const f of near){const x=(f[1]-a)/span*zw,ww=Math.max(1.5,f[2]/span*zw);z.fillStyle=f[1]===off?"#b8ffd2":(LVLC[f[4]]||"#3b6fd8");z.globalAlpha=f[1]===off?1:.75;z.fillRect(x,f[3]?6:16,ww-0.5,f[3]?zh-12:zh-32)}z.globalAlpha=1;
+  if(X.mode==="runs"){z.fillStyle="#3b6fd8";z.fillRect(zw/2-zw*.25,16,zw*.5,zh-32)}
+  z.strokeStyle="#7fe3a6";z.setLineDash([3,3]);z.beginPath();z.moveTo(zw/2,0);z.lineTo(zw/2,zh);z.stroke();z.setLineDash([]);
+  z.fillStyle="#9db3a5";z.font="10px Cascadia Mono, Consolas, monospace";z.fillText("0x"+Math.max(0,Math.floor(a)).toString(16),4,zh-3);const r="0x"+Math.floor(a+span).toString(16);z.fillText(r,zw-z.measureText(r).width-4,zh-3)}
+ async function hex(off){if(busy)return;busy=true;try{const h=hexCache[off]||(hexCache[off]=await api(`/api/case/${encodeURIComponent(CDIR)}/frame/${pick.evidence||"E1"}?offset=${Math.floor(off)}`));
+  if(h.error){$("#xhex").textContent=h.error;return}const b=h.hex.match(/../g)||[];const tag=new Array(b.length).fill(-1);(h.fields||[]).forEach((f,i)=>{for(let j=f.at;j<Math.min(b.length,f.at+f.len);j++)tag[j]=i});
+  let out="";for(let r=0;r<b.length;r+=16){out+=`<div><span class="o">${(h.offset+r).toString(16).padStart(10,"0")}</span> `+b.slice(r,r+16).map((x,j)=>{const t=tag[r+j];return t>=0?`<b style="color:${FIELDC[t%FIELDC.length]}">${x}</b>`:x}).join(" ")+`</div>`}
+  $("#xhex").innerHTML=out;$("#xfields").innerHTML=(h.fields||[]).map((f,i)=>`<div><span class="sw" style="background:${FIELDC[i%FIELDC.length]}"></span><span>${esc(f.name)}</span><b>${esc(f.value)}</b></div>`).join("")||`<div class="mut">no recorder header at this position (raw file bytes)</div>`}finally{busy=false}}
+ function tick(){if(!document.getElementById("xv"))return;const t=v.currentTime;
+  if(X.mode==="frames"&&fr.length){const i=posAt(t);if(i!==cur&&i!=null){cur=i;const f=fr[i];trail.push(f[1]);if(trail.length>24)trail.shift();draw(f[1],f[2],f[3]);hex(f[1]);
+    $("#xread").innerHTML=`<div><span>frame</span><b>${(i+1).toLocaleString()} / ${fr.length.toLocaleString()}</b></div><div><span>offset</span><b>0x${f[1].toString(16)}</b></div><div><span>length</span><b>${f[2].toLocaleString()} B</b></div><div><span>type</span><b>${f[3]?"keyframe":"delta"}</b></div><div><span>evidence</span><b style="color:${LVLC[f[4]]||"#fff"}">${esc(f[4])}</b></div><div><span>recorder time</span><b>${hmsms((X.start_ms||0)+f[0])}</b></div>`;
+    $("#xosd").innerHTML=`<span class="rec"><span class="dot"></span></span>${esc(pick.label)} · 0x${f[1].toString(16)}`}}
+  else if(X.mode==="runs"){const o=Math.floor(runOffset(t)/16)*16;if(Math.abs(o-cur)>4096||cur<0){cur=o;trail.push(o);if(trail.length>24)trail.shift();draw(o,0,0);hex(o);
+    $("#xread").innerHTML=`<div><span>file</span><b>${esc(pick.source_file||pick.id)}</b></div><div><span>offset</span><b>0x${o.toString(16)}</b></div><div><span>basis</span><b>cluster runs</b></div><div><span>provenance</span><b>${esc(pick.provenance||"")}</b></div>`}}
+  else if(cur!==-2){cur=-2;draw(null);$("#xread").textContent="No byte map for this clip (export file without a filesystem image)."}
+  requestAnimationFrame(tick)}
+ $("#xrate").onchange=()=>v.playbackRate=+$("#xrate").value;$("#xplay").onclick=()=>{v.paused?v.play():v.pause()};v.onplay=()=>$("#xplay").innerHTML=ico("pause")+"Pause";v.onpause=()=>$("#xplay").innerHTML=ico("play")+"Play";
+ $("#xprev").onclick=()=>{v.pause();v.currentTime=Math.max(0,v.currentTime-1/fps)};$("#xnext").onclick=()=>{v.pause();v.currentTime=v.currentTime+1/fps};
+ draw(null);requestAnimationFrame(tick);if(window._present)setTimeout(()=>v.play().catch(()=>{}),400);
+ if(window._seekMs&&X.start_ms){const s=Math.max(0,(window._seekMs-X.start_ms)/1000);window._seekMs=null;const go=()=>{v.currentTime=s};v.readyState>=1?go():v.addEventListener("loadedmetadata",go,{once:true})}}
+
+// ================================================================ Nyaydarshika: presentation mode
+function presSteps(){const c=CASE,po=c.poison_scorecard||[],pv=(c.provenance||[]).find(r=>r.edits&&r.edits.length),crit=c.findings.filter(f=>f.severity==="critical").length;
+ const edit=pv?pv.edits[0]:null,drift=c.clips.filter(k=>k.drift_s).map(k=>`${k.camera} ${k.drift_s>0?"+":""}${k.drift_s} s`).slice(0,3).join(", ");
+ return [
+  ["command","The seizure",`${c.evidence_items.length} evidence item(s), opened read-only. Hashes before and after analysis are ${c.evidence.unchanged?"identical":"DIFFERENT"}; the custody chain is ${c.custody_now.ok?"intact":"broken"}.${po.length?` ${po.filter(p=>p.caught).length} of ${po.length} planted manipulations caught.`:""}`],
+  ["hypotheses","Roopnirnay · the bytes decide","Every parser tests every disk. The winning interpretation shows the structures it explains; brand labels on the disk are weak context and are reported when they disagree."],
+  ["disk","Recovery from formatted space","Each cell is a slice of the seized image: green is in the recorder's live index, amber was carved from space the index no longer lists. Click any cell to read the original bytes."],
+  ["reconcile","Ekmatpatra · where sources disagree","Recorder index, frames on disk, recorder log, burned-in clock and exported copies, camera by camera. Disagreements are stated, not hidden."],
+  ["provenance","The edited export",edit?`Frame-by-frame matching against the recorder shows ${(edit.frames_removed/(c.byClip[pv.export]||{fps:10}).fps||0).toFixed(1)} s removed: ${edit.summary}`:"Exports are matched frame by frame against recorder footage."],
+  ["time","Kaalsthirta · clocks that lie",`Burned-in camera clocks are never trusted as truth.${drift?` Measured: ${drift}.`:""} The robustness chart shows how many event orders would flip had they been trusted.`],
+  ["xray","Kanikadarpan · every frame to its bytes","While the clip plays, the marker on the disk ribbon is the exact place on the seized disk this frame came from; the hex is read live from the original image and the recorder's own header is decoded."],
+  ["ask","Saakshyaprashna · ask the evidence","Questions are answered only from what the case records, with a citation for every item. It refuses to identify people and refuses questions it cannot ground."],
+  ["custody","Punarnirmiti · rebuild on another PC","A signed capsule lists the byte ranges behind every clip. Replay rebuilds each clip from the images and checks its hash; flip one byte and exactly that clip fails."],
+  ["command","Verdict",`${crit} critical finding(s), every one traceable to source bytes, every AI output a lead until an examiner accepts it.`]]}
+function present(){if(!CASE)return;window._present={i:0,auto:false};presGo(0)}
+function presGo(i){const S=presSteps();const p=window._present;if(!p)return;p.i=Math.max(0,Math.min(S.length-1,i));const [tab,title,text]=S[p.i];
+ if(tab==="ask")window._arg=CASE.findings.some(f=>f.kind==="export-edited"||f.kind==="deleted-file")?"Was anything deleted or edited?":"Any clock changes?";
+ const h=`#/case/${encodeURIComponent(CDIR)}/${tab}`;if(location.hash!==h)location.hash=h;else route();
+ let el=$("#pres");if(!el){el=document.createElement("div");el.id="pres";el.className="pres";document.body.appendChild(el)}
+ el.innerHTML=`<div class="pn">${String(p.i+1).padStart(2,"0")}<small>/ ${S.length}</small></div><div class="pt"><div class="eyebrow" style="color:var(--mint)">Nyaydarshika · ${esc(CASE.case.case_id)}</div><h3>${esc(title)}</h3><p>${esc(text)}</p></div>
+  <div class="pc"><button class="btn ghostd" onclick="presGo(window._present.i-1)">◀</button><button class="btn mint" onclick="presGo(window._present.i+1)">Next ▶</button>
+  <button class="btn ghostd" id="pauto">${p.auto?"Pause":"Auto"}</button><button class="btn ghostd" onclick="presEnd()">Close</button></div><div class="pbar"><i style="width:${(p.i+1)/S.length*100}%"></i></div>`;
+ $("#pauto").onclick=()=>{p.auto=!p.auto;clearTimeout(p.t);if(p.auto)p.t=setTimeout(()=>presGo(p.i+1),9000);presGo(p.i)};
+ clearTimeout(p.t);if(p.auto&&p.i<S.length-1)p.t=setTimeout(()=>presGo(p.i+1),9000);
+ if(tab==="custody")setTimeout(()=>{const b=$("#rp");if(b&&!b.disabled)b.click()},1600)}
+function presEnd(){if(window._present)clearTimeout(window._present.t);window._present=null;const el=$("#pres");if(el)el.remove()}
+document.addEventListener("keydown",e=>{if(!window._present||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;if(e.key==="ArrowRight")presGo(window._present.i+1);if(e.key==="ArrowLeft")presGo(window._present.i-1);if(e.key==="Escape")presEnd()});
+
+// ================================================================ Setugrahan: live acquisition
+async function livePage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Setugrahan</b> · live acquisition`);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Setugrahan <span class="mut" style="font-weight:500;font-size:18px">· acquire from a running recorder</span></h1>
+ <p class="note">When the recorder cannot be powered down or its disk imaged, pull footage through its own interfaces. Every step goes to the custody chain: device identity over ONVIF, the recorder's clock against this workstation, the recordings found, and each download with its hash. Downloads are then analysed like any other evidence.</p></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);align-items:start">
+ <div class="card"><div class="hd"><h3>Recorder</h3><span class="sp"></span><button class="btn sm" id="lmock">${ico("bridge")}Start simulated recorder</button></div><div id="lbanner"></div>
+  <div class="grid g2"><div><label class="lb">Address</label><input id="lhost" placeholder="192.168.1.64"></div><div><label class="lb">Port</label><input id="lport" value="80"></div>
+  <div><label class="lb">User</label><input id="luser" value="admin" autocomplete="off"></div><div><label class="lb">Password</label><input id="lpass" type="password" autocomplete="new-password"></div>
+  <div><label class="lb">Vendor API</label><select id="lvend"><option value="auto">auto (from ONVIF)</option><option value="dahua">Dahua / CP Plus (loadfile.cgi)</option><option value="hikvision">Hikvision (ISAPI)</option></select></div>
+  <div><label class="lb">Channels</label><input id="lch" value="1,2"></div>
+  <div><label class="lb">From (recorder time)</label><input id="lst" placeholder="2026-10-06 10:00:00"></div><div><label class="lb">To</label><input id="len" placeholder="2026-10-06 10:05:00"></div></div>
+  <div class="tiny mut" style="margin-top:8px">The password is passed to the acquisition process in memory only; it is never written to disk or to the custody chain.</div></div>
+ <div class="col"><div class="card"><div class="hd"><h3>Case</h3></div><label class="lb" style="margin-top:0">Case ID</label><input id="lcid" value="LIVE-${new Date().toISOString().slice(5,16).replace(/[-T:]/g,"")}">
+  <label class="lb">Examiner</label><input id="lexm" value="${esc(localStorage.exm||"")}"><label class="row small" style="margin-top:12px;gap:8px"><input type="checkbox" id="lai" style="width:auto"> Run AI layers on the downloads</label>
+  <div id="lerr" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div><div class="row" style="margin-top:14px"><button class="btn pri" id="lgo">${ico("bridge")}Acquire</button></div></div>
+  <div class="card flat"><h3>What happens</h3><ol class="small" style="margin:8px 0 0;padding-left:18px;color:var(--ink2)"><li>Identify the device over ONVIF (make, model, serial, firmware)</li><li>Record the recorder clock against this workstation</li><li>List recordings, then download each channel for the window</li><li>Hash every download and log it</li><li>Analyse the downloads: frames, cameras, clocks, findings</li></ol></div></div></div>`;
+ $("#lmock").onclick=async()=>{const m=await api("/api/live/mock",{method:"POST",body:"{}"});if(m.error){toast(m.error);return}
+  $("#lhost").value=m.host;$("#lport").value=m.port;$("#luser").value=m.user;$("#lpass").value=m.password;$("#lvend").value=m.vendor;$("#lch").value=m.channels.slice(0,2).join(",");$("#lst").value=m.start;$("#len").value=m.end;
+  $("#lbanner").innerHTML=`<div class="banner" style="margin-bottom:10px">${ico("warn",'width="16" height="16" style="flex:none"')}<span><b>Simulated recorder.</b> ${esc(m.note)}</span></div>`;
+  if(!$("#lcid").value.startsWith("LIVE-SIM"))$("#lcid").value="LIVE-SIM-"+new Date().toISOString().slice(11,16).replace(":","")};
+ $("#lgo").onclick=async()=>{const e=$("#lerr");e.style.display="none";const exm=$("#lexm").value.trim();if(!exm){e.style.display="flex";e.textContent="Enter the examiner's name.";return}localStorage.exm=exm;
+  const body={kind:"live",case_id:$("#lcid").value.trim(),examiner:exm,ai:$("#lai").checked,password:$("#lpass").value,
+   live:{host:$("#lhost").value.trim(),port:$("#lport").value.trim(),user:$("#luser").value.trim(),vendor:$("#lvend").value,channels:$("#lch").value.split(",").map(s=>s.trim()).filter(Boolean),start:$("#lst").value.trim(),end:$("#len").value.trim()}};
+  const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();
+  if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
+
+// ================================================================ Kasautipeeth: real-recorder validation
+async function kasautiPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Kasautipeeth</b> · real-recorder validation`);const runs=await api("/api/kasauti").catch(()=>[]);
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Kasautipeeth <span class="mut" style="font-weight:500;font-size:18px">· the touchstone</span></h1>
+ <p class="note">Modelled images prove the method; only a real recorder proves the tool. Record on a real DVR while writing down what happens, image its disk, and let Kasautipeeth score what Sarvadristhi recovers against your log. A passing physical run promotes that format to “real disk” in Kshamtapatra.</p></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);align-items:start">
+ <div class="card"><div class="hd"><h3>Protocol</h3><span class="sp"></span><a class="btn sm" href="/api/kasauti/template.csv">${ico("doc")}Event-log template</a></div>
+  <ol class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:7px;color:var(--ink2)">
+  <li>Note make, model, serial and firmware from the recorder's menu.</li><li>Compare the recorder clock with a reference (phone on NTP); write down the offset.</li>
+  <li>Record on two or more cameras; write each start and end time, and anything that happens in view.</li><li>Delete a recording from the menu, or format the disk; write the time.</li>
+  <li>Optionally change one camera's clock; write the time and the change.</li><li>Power down, remove the disk, image it through a write-blocker (<span class="mono">sarvadristhi acquire</span>).</li>
+  <li>Run Kasautipeeth with the image and the log.</li></ol></div>
+ <div class="card"><div class="hd"><h3>Run</h3><span class="sp"></span><button class="btn sm" id="kreh">Rehearse on a modelled disk</button></div>
+  <div class="grid g2"><div style="grid-column:1/-1"><label class="lb" style="margin-top:0">Disk image</label><input id="kimg" placeholder="D:\\evidence\\dvr.img"></div>
+  <div style="grid-column:1/-1"><label class="lb">Event log (CSV)</label><input id="kev" placeholder="D:\\evidence\\event_log.csv"></div>
+  <div><label class="lb">Make</label><input id="kmake"></div><div><label class="lb">Model</label><input id="kmodel"></div><div><label class="lb">Serial</label><input id="kser"></div><div><label class="lb">Firmware</label><input id="kfw"></div>
+  <div><label class="lb">Recorder minus reference (s)</label><input id="koff" value="0"></div><div><label class="lb">Examiner</label><input id="kexm" value="${esc(localStorage.exm||"")}"></div></div>
+  <label class="row small" style="margin-top:12px;gap:8px"><input type="checkbox" id="kphys" style="width:auto"> This image comes from a physical recorder</label>
+  <div id="kerr" class="banner" style="display:none;margin-top:12px;background:var(--crit-bg);color:#8f241c"></div><div class="row" style="margin-top:14px"><button class="btn pri" id="kgo">${ico("touch")}Run Kasautipeeth</button></div></div></div>
+ <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Runs</h3><span class="tiny mut">${runs.length} on this workstation</span></div>${runs.length?`<div class="tblwrap"><table><tr><th>When</th><th>Device</th><th>Kind</th><th>Detected family</th><th>Mean coverage</th><th>Logged events detected</th></tr>
+  ${runs.map(r=>`<tr><td class="mono tiny">${esc(r.utc)}</td><td>${esc([r.device.make,r.device.model,r.device.serial].filter(Boolean).join(" ")||"—")}</td><td>${r.physical_recorder?`<span class="chip c-ink">physical recorder</span>`:`<span class="chip c-n">rehearsal</span>`}</td><td>${esc(r.family)} · ${r.confidence}</td><td class="num">${r.mean_coverage==null?"—":pct(r.mean_coverage)}</td><td>${esc(r.events_detected)}</td></tr>`).join("")}</table></div>`:`<div class="empty">No runs yet. Rehearse on a modelled disk to see the report, then run it on a real recorder.</div>`}</div>`;
+ $("#kreh").onclick=async()=>{const r=await api("/api/kasauti/rehearsal",{method:"POST",body:"{}"});if(r.error){toast(r.error);return}$("#kimg").value=r.image;$("#kev").value=r.events;$("#kmake").value="Pramanshala (modelled)";$("#kmodel").value=r.model;$("#kphys").checked=false;toast("Rehearsal log written from ground truth")};
+ $("#kgo").onclick=async()=>{const e=$("#kerr");e.style.display="none";const exm=$("#kexm").value.trim();if(!exm){e.style.display="flex";e.textContent="Enter the examiner's name.";return}localStorage.exm=exm;
+  const body={kind:"kasauti",case_id:"KASAUTI-"+new Date().toISOString().slice(5,19).replace(/[-T:]/g,""),examiner:exm,
+   kasauti:{image:$("#kimg").value,events:$("#kev").value,physical:$("#kphys").checked,recorder_offset_s:+$("#koff").value||0,device:{make:$("#kmake").value,model:$("#kmodel").value,serial:$("#kser").value,firmware:$("#kfw").value}}};
+  const r=await fetch("/api/analyze",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||j.error){e.style.display="flex";e.textContent=j.error||"failed";return}location.hash="#/job/"+j.job}}
+
+// ================================================================ Maryadapatra: standards
+async function maryadaPage(){sideHTML();topHTML(`<a href="#/">Overview</a> / <b>Maryadapatra</b> · standards`);const m=await api("/api/standards");
+ const st=s=>s.startsWith("supported")&&!s.includes("only")?"c-ok":s.startsWith("supported")?"c-info":s.includes("ready")||s.includes("data sheet")?"c-warn":"c-n";
+ $("#main").innerHTML=`<div class="col" style="gap:4px"><h1>Maryadapatra <span class="mut" style="font-weight:500;font-size:18px">· the standards it answers to</span></h1><p class="note">${esc(m.note)}</p></div>
+ ${m.standards.map(s=>`<div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>${esc(s.id)}</h3><span class="tiny mut">${esc(s.title)}</span></div><div class="tblwrap"><table><tr><th>Area</th><th>What it asks</th><th>How Sarvadristhi answers</th><th>Where</th><th>Status</th></tr>
+ ${s.items.map(i=>`<tr><td><b>${esc(i.area)}</b></td><td class="small">${esc(i.ask)}</td><td class="small">${esc(i.how)}</td><td class="tiny mut">${esc(i.where)}</td><td><span class="chip ${st(i.status)}">${esc(i.status)}</span></td></tr>`).join("")}</table></div></div>`).join("")}`}
+
+// ================================================================ examiner tools (Sakshilekh, Khandmudra, Kaalshodhan)
+function examinerTools(c){const vids=c.clips.filter(k=>k.mp4_file);if(!vids.length)return"";
+ return `<div class="grid g2"><div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("doc")}</span></span><div><h3>Sakshilekh</h3><div class="tiny mut">your own finding at the playhead, with the frame captured</div></div></div>
+  <div class="row" style="flex-wrap:nowrap"><select id="slclip" style="flex:1">${vids.map(k=>`<option value="${esc(k.id)}">${esc(k.label)} · ${esc(k.id)}</option>`).join("")}</select><input id="sldur" type="number" value="5" style="width:80px" title="seconds"></div>
+  <textarea id="sltext" rows="2" style="margin-top:8px" placeholder="What you see, in your words"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" id="slgo">${ico("doc")}Record finding</button><span class="tiny mut" id="slmsg"></span></div></div>
+ <div class="card"><div class="hd"><span class="feat"><span class="ico">${ico("film")}</span></span><div><h3>Khandmudra</h3><div class="tiny mut">export an interval as a hashed derivative, no re-encode</div></div></div>
+  <div class="row" style="flex-wrap:nowrap"><span class="small mut">from playhead −</span><input id="kmb" type="number" value="5" style="width:70px"><span class="small mut">s to +</span><input id="kma" type="number" value="5" style="width:70px"><span class="small mut">s</span></div>
+  <input id="kmp" style="margin-top:8px" placeholder="Purpose (e.g. excerpt for the court bundle)"><div class="row" style="margin-top:8px"><button class="btn pri" id="kmgo">${ico("film")}Export segment</button><span class="tiny mut" id="kmmsg"></span></div></div></div>`}
+function bindExaminerTools(c){if(!$("#slgo"))return;const exm=()=>localStorage.exm||c.case.examiner;
+ const at=id=>{const k=c.byClip[id],T=window._T;return k&&k.start_ms&&T?Math.max(0,(T-k.start_ms)/1000):0};
+ const auto=()=>{const T=window._T;const k=c.clips.find(k=>k.mp4_file&&k.start_ms&&T>=k.start_ms&&T<=k.end_ms);if(k&&$("#slclip").value!==k.id&&document.activeElement!==$("#slclip"))$("#slclip").value=k.id};window._onT=auto;
+ $("#slgo").onclick=async()=>{const id=$("#slclip").value,s=at(id);const r=await api(`/api/case/${encodeURIComponent(CDIR)}/notes`,{method:"POST",body:JSON.stringify({clip:id,from_s:s,to_s:s+(+$("#sldur").value||5),text:$("#sltext").value,examiner:exm()})});
+  if(r.error){$("#slmsg").textContent=r.error;return}$("#sltext").value="";$("#slmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id} recorded at ${s.toFixed(1)} s and logged to custody</span>`;toast(`Sakshilekh ${r.id} recorded`)};
+ $("#kmgo").onclick=async()=>{const id=$("#slclip").value,s=at(id);$("#kmmsg").textContent="Cutting…";const r=await api(`/api/case/${encodeURIComponent(CDIR)}/segment`,{method:"POST",body:JSON.stringify({clip:id,from_s:Math.max(0,s-(+$("#kmb").value||5)),to_s:s+(+$("#kma").value||5),purpose:$("#kmp").value,examiner:exm()})});
+  if(r.error){$("#kmmsg").textContent=r.error;return}$("#kmmsg").innerHTML=`<span style="color:var(--ok)">✓ ${r.id}: ${r.frames} frames, sha256 ${r.sha256.slice(0,12)}…</span> <a href="${window.F(r.file)}" target="_blank">open</a>`;toast(`Khandmudra ${r.id} exported`)}}
+async function kaalshodhanCard(c){const box=$("#kaal");if(!box)return;const o=await api(`/api/case/${encodeURIComponent(CDIR)}/offsets`);const cur=o.current||{};
+ box.innerHTML=`<div class="hd"><span class="feat"><span class="ico">${ico("clock")}</span></span><div><h3>Kaalshodhan</h3><div class="tiny mut">recorder clock against a reference, set by the examiner; recorder times are never rewritten</div></div></div>
+ <div class="tblwrap"><table><tr><th>Item</th><th>Current offset</th><th>Basis</th><th>Real-world time of first clip</th><th>Set offset</th></tr>
+ ${c.evidence_items.map(e=>{const r=cur[e.id],k=c.clips.find(x=>x.evidence===e.id&&x.start_ms);return `<tr><td><b>${esc(e.id)}</b> · ${esc(e.name)}</td><td class="num">${r?(r.offset_s>0?"+":"")+r.offset_s+" s":"none"}</td><td class="small">${r?esc(r.reason):"—"}</td>
+  <td class="mono tiny">${k?`recorder ${hms(k.start_ms)}${r?` → real ${hms(k.start_ms+r.offset_s*1000)}`:""}`:"—"}</td>
+  <td><div class="row" style="flex-wrap:nowrap;gap:6px"><input id="ko_${e.id}" type="number" step="0.1" placeholder="s" style="width:80px"><input id="kr_${e.id}" placeholder="basis (e.g. vs NTP phone at seizure)" style="min-width:200px"><button class="btn sm" onclick="setKaal('${e.id}')">Save</button></div></td></tr>`}).join("")}</table></div>
+ ${o.history.length?`<details style="margin-top:8px"><summary>history (${o.history.length})</summary>${o.history.map(h=>`<div class="tiny">${esc(h.utc)} · ${esc(h.evidence)} ${h.offset_s>0?"+":""}${h.offset_s} s · ${esc(h.reason)} · ${esc(h.examiner)}</div>`).join("")}</details>`:""}`}
+async function setKaal(eid){const r=await api(`/api/case/${encodeURIComponent(CDIR)}/offset`,{method:"POST",body:JSON.stringify({evidence:eid,offset_s:+$("#ko_"+eid).value,reason:$("#kr_"+eid).value,examiner:localStorage.exm||CASE.case.examiner})});
+ if(r.error){toast(r.error);return}toast(`Kaalshodhan: ${eid} ${r.offset_s>0?"+":""}${r.offset_s} s logged to custody`);kaalshodhanCard(CASE)}
+async function examinerLists(c){const box=$("#exlists");if(!box)return;const [N,S]=await Promise.all([api(`/api/case/${encodeURIComponent(CDIR)}/notes`),api(`/api/case/${encodeURIComponent(CDIR)}/segments`)]);const F=window.F;
+ box.innerHTML=`<div class="card"><div class="hd"><h3>Sakshilekh</h3><span class="tiny mut">${N.length} examiner finding(s) · go to Timeline &amp; video to add one</span></div>${N.length?`<div class="cites">${N.map(n=>`<div class="cite" onclick="jump(${n.recorder_from_ms||0})">${n.frame?`<img src="${F(n.frame)}">`:""}<div class="c"><b>${esc(n.id)} · ${esc(n.text)}</b><span class="mono">${n.recorder_from_ms?hmsms(n.recorder_from_ms):n.from_s+" s"}</span><span class="mut">${esc(n.camera||"")}</span><span class="dim">${esc(n.examiner)} · ${esc(n.utc)}</span></div></div>`).join("")}</div>`:`<div class="mut small">None yet.</div>`}</div>
+ <div class="card pad0"><div class="hd" style="padding:14px 18px 0"><h3>Khandmudra</h3><span class="tiny mut">${S.length} exported segment(s)</span></div>${S.length?`<div class="tblwrap"><table><tr><th>ID</th><th>Camera</th><th>Interval</th><th>Frames</th><th>Purpose</th><th>SHA-256</th><th></th></tr>${S.map(s=>`<tr><td class="mono">${s.id}</td><td class="small">${esc(s.camera||"")}</td><td class="num">${s.asked_from_s.toFixed(1)}–${s.asked_to_s.toFixed(1)} s</td><td class="num">${s.frames}</td><td class="small">${esc(s.purpose)}</td><td class="mono tiny">${s.sha256.slice(0,24)}…</td><td><a class="btn sm" href="${F(s.file)}" target="_blank">Open</a></td></tr>`).join("")}</table></div>`:`<div class="empty">None yet.</div>`}</div>`}
+
+window.addEventListener("hashchange",route);route();
+</script>
+</body>
+</html>

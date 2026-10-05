@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Forensic report {{ c.case.case_id }}</title>
+<style>
+ @page { size: A4; margin: 16mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #666; } }
+ body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 10pt; color: #1b1b1b; line-height: 1.4; max-width: 960px; margin: auto; }
+ h1 { font-size: 17pt; margin: 0 0 4px; } h2 { font-size: 12.5pt; border-bottom: 2px solid #1b1b1b; padding-bottom: 2px; margin-top: 22px; }
+ h3 { font-size: 10.5pt; margin: 14px 0 4px; }
+ table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 9pt; }
+ th, td { border: 1px solid #ccc; padding: 3px 5px; text-align: left; vertical-align: top; }
+ th { background: #f1f1f1; }
+ tr { page-break-inside: avoid; break-inside: avoid; }
+ thead { display: table-header-group; }
+ h2, h3 { break-after: avoid; page-break-after: avoid; }
+ code, .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 8.5pt; word-break: break-all; }
+ .crit { color: #b00020; font-weight: bold; } .warn { color: #a05a00; font-weight: bold; } .info { color: #555; }
+ .note { background: #fff8e1; border-left: 4px solid #e0a800; padding: 6px 10px; margin: 8px 0; }
+ .muted { color: #666; } .kv td:first-child { width: 32%; font-weight: bold; background: #fafafa; }
+ .pill { display: inline-block; padding: 0 6px; border-radius: 8px; color: #fff; font-size: 8.5pt; }
+ .pb { page-break-before: always; }
+</style></head><body>
+
+<h1>Digital video forensic report</h1>
+<div class="muted">Case {{ c.case.case_id }} · examiner {{ c.case.examiner }} · generated {{ c.generated_utc }} UTC · {{ c.tool.name }} {{ c.tool.version }}</div>
+
+<h2>1. Summary</h2>
+<table class="kv">
+<tr><td>Recorder format family</td><td>{{ c.detection.family }} (confidence {{ c.detection.confidence }}) — {{ c.detection.brands_using_family | join(", ") }}</td></tr>
+<tr><td>Analysis mode</td><td>{{ c.recovery.mode }}</td></tr>
+<tr><td>Video frames recovered</td><td>{{ c.recovery.frames }} in {{ c.clips | length }} clip(s) across {{ c.cameras | length }} camera(s)</td></tr>
+<tr><td>By evidence level</td><td>{% for k, v in c.recovery.levels.items() %}<span class="pill" style="background:{{ level_color[k] }}">{{ k }}</span> {{ v }}&nbsp;&nbsp;{% endfor %}</td></tr>
+<tr><td>Findings</td><td>{% for s in ["critical","warning","info"] %}{{ c.findings | selectattr("severity","equalto",s) | list | length }} {{ s }}{% if not loop.last %} · {% endif %}{% endfor %}</td></tr>
+<tr><td>Evidence integrity</td><td>{% if c.evidence.unchanged %}Source hash identical before and after analysis{% else %}<span class="crit">SOURCE HASH CHANGED DURING ANALYSIS</span>{% endif %}; custody ledger: {{ c.custody.status }}</td></tr>
+</table>
+<div class="note"><b>Evidence levels.</b> <i>Index-confirmed</i>: listed in the recorder's own live index. <i>Carved + timestamp</i>: recovered from disk with a timestamp the recorder wrote into the video container. <i>Content-only</i>: recovered video whose camera and time come from analysing the picture (burned-in overlay) or are unknown. Machine-generated triage (section 6) is not a finding of fact.</div>
+
+<h2>2. Evidence and acquisition</h2>
+<table class="kv">
+<tr><td>Source</td><td class="mono">{{ c.evidence.source }}</td></tr>
+<tr><td>Size</td><td>{{ "{:,}".format(c.evidence.bytes) }} bytes</td></tr>
+<tr><td>MD5 (before analysis)</td><td class="mono">{{ c.evidence.before.md5 }}</td></tr>
+<tr><td>SHA-256 (before analysis)</td><td class="mono">{{ c.evidence.before.sha256 }}</td></tr>
+<tr><td>SHA-256 (after analysis)</td><td class="mono">{{ c.evidence.after.sha256 }}</td></tr>
+{% if c.e01 %}
+<tr><td>E01 container</td><td class="mono">{{ c.e01.e01 }}</td></tr>
+<tr><td>E01 stored vs recomputed hashes</td><td>{{ "match" if c.e01.hashes_match else "MISMATCH" }} (MD5 {{ c.e01.stored.md5 }})</td></tr>
+{% endif %}
+{% if c.acquisition %}
+<tr><td>Acquired from</td><td class="mono">{{ c.acquisition.source }} ({{ c.acquisition.started_utc }} – {{ c.acquisition.finished_utc }} UTC)</td></tr>
+<tr><td>Source vs image hash</td><td>{{ "verified identical" if c.acquisition.verified else "MISMATCH" }}; unreadable sectors: {{ c.acquisition.unreadable_sector_count }}</td></tr>
+<tr><td>Write protection</td><td>{{ c.acquisition.write_blocker_note }}</td></tr>
+{% endif %}
+</table>
+
+<h2>3. Device identification</h2>
+<table><thead><tr><th>Candidate family</th><th>Confidence</th><th>Basis</th></tr></thead>
+{% for d in c.detection.candidates %}<tr><td>{{ d.family }} ({{ d.plugin }})</td><td>{{ d.confidence }}</td><td class="mono">{{ d.evidence }}</td></tr>{% endfor %}
+</table>
+{% if c.recovery.master_sector %}<h3>Filesystem metadata</h3>
+<table class="kv">{% for k, v in c.recovery.master_sector.items() %}<tr><td>{{ k }}</td><td class="mono">{{ v }}</td></tr>{% endfor %}</table>{% endif %}
+
+<h2>4. Findings</h2>
+{% if c.findings %}<table><thead><tr><th>Severity</th><th>Type</th><th>Finding</th></tr></thead>
+{% for f in c.findings %}<tr><td class="{{ {'critical':'crit','warning':'warn'}.get(f.severity,'info') }}">{{ f.severity }}</td><td>{{ f.kind }}</td><td>{{ f.summary }}</td></tr>{% endfor %}
+</table>{% else %}<p>No anomalies found.</p>{% endif %}
+
+<h2>5. Timeline</h2>
+{{ svg | safe }}
+<p class="muted">Bars: recovered clips coloured by evidence level. Red outlines: motion triage. Dashed lines: recorder log entries (red = format/initialise).</p>
+
+<h3>Cameras and clock drift</h3>
+<table><thead><tr><th>Channel</th><th>Burned-in label</th><th>Clips</th><th>Frames</th><th>Overlay clock vs recorder</th></tr></thead>
+{% for cam in c.cameras %}<tr><td>{{ cam.channel }}</td><td>{{ cam.label or "—" }}</td><td>{{ cam.clips }}</td><td>{{ cam.frames }}</td>
+<td>{% if cam.drift and cam.drift.drift_s is defined and cam.drift.drift_s is not none %}{{ "%+.0f"|format(cam.drift.drift_s) }} s ({{ cam.drift.agreeing }}/{{ cam.drift.samples }} readings agree){% elif cam.drift %}{{ cam.drift.status }} ({{ cam.drift.samples }} readings){% else %}—{% endif %}</td></tr>{% endfor %}
+</table>
+
+<h3>Recovered clips</h3>
+<table><thead><tr><th>Clip</th><th>Ch</th><th>Start (recorder clock)</th><th>End</th><th>Frames</th><th>Evidence</th><th>Time source</th><th>Exported file and SHA-256</th></tr></thead>
+{% for k in c.clips %}<tr><td>{{ k.id }}</td><td>{{ k.channel if k.channel is not none else "?" }}</td><td>{{ k.start_ms | ms }}</td><td>{{ k.end_ms | ms }}</td><td>{{ k.frames }}</td>
+<td><span class="pill" style="background:{{ level_color[k.evidence_level] }}">{{ k.evidence_level }}</span></td><td>{{ k.time_source | join(", ") }}</td>
+<td class="mono">{{ k.mp4_file or k.raw_file or "not exported" }}<br>{{ k.mp4_sha256 or k.raw_sha256 or "" }}</td></tr>{% endfor %}
+</table>
+
+<h2>6. Machine triage (not findings)</h2>
+<div class="note">Automatic detections are leads for a human examiner. Each states its method and confidence. None is evidence by itself and none appears in the certificate.</div>
+{% if c.events %}<table><thead><tr><th>Channel</th><th>From</th><th>To</th><th>Type</th><th>Confidence</th><th>Basis</th></tr></thead>
+{% for e in c.events %}<tr><td>{{ e.channel }}</td><td>{{ e.abs_start_ms | ms }}</td><td>{{ e.abs_end_ms | ms }}</td><td>{{ e.type }}</td><td>{{ e.confidence }}</td><td>{{ e.basis }}</td></tr>{% endfor %}
+</table>{% else %}<p>No triage events{{ " (analytics disabled)" if not c.options.analytics else "" }}.</p>{% endif %}
+
+{% if c.ai_triage %}<h3>AI detections</h3>
+<p class="muted">Backends: {{ (c.ai_triage.values() | list)[0].backends }}. Model accuracy on CCTV footage is not validated by this tool; verify every detection visually.</p>
+<table><thead><tr><th>Clip</th><th>Frames examined</th><th>Detections</th><th>By type</th></tr></thead>
+{% for cid, r in c.ai_triage.items() %}<tr><td>{{ cid }}</td><td>{{ r.frames_examined }}</td><td>{{ r.detections | length }}</td>
+<td>{% for w in r.detections | map(attribute="what") | unique %}{{ w }} ({{ r.detections | selectattr("what","equalto",w) | list | length }}) {% endfor %}</td></tr>{% endfor %}
+</table>{% endif %}
+
+{% if c.recovery.logs %}<h2>7. Recorder system log</h2>
+<table><thead><tr><th>Time (recorder clock)</th><th>Type</th><th>Entry</th></tr></thead>
+{% for l in c.recovery.logs %}<tr><td>{{ (l.time * 1000) | ms }}</td><td>{{ l.type_name }}</td><td>{{ l.text }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.evidence_items %}<h2>7a. Evidence items and format coverage</h2>
+{% if c.scenario %}<div class="note">{{ c.scenario.nature }}. Footage: {{ c.scenario.footage.dataset }} ({{ c.scenario.footage.license }}, {{ c.scenario.footage.home }}).</div>{% endif %}
+<table><thead><tr><th>Item</th><th>Format (confidence)</th><th>Coverage</th><th>SHA-256 before</th><th>Unchanged</th><th>Custody</th></tr></thead>
+{% for e in c.evidence_items %}<tr><td>{{ e.id }} {{ e.name }}</td><td>{{ e.family }} ({{ e.confidence }})</td><td>{{ e.coverage.level }}<br><span class="muted">{{ e.coverage.basis }}</span></td>
+<td class="mono">{{ (e.hash.sha256 if e.hash and e.hash.sha256 else "per-file") }}</td><td>{{ "yes" if e.unchanged else "NO" }}</td><td>{{ e.custody }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.provenance %}<h2>7b. Export provenance</h2>
+<p class="muted">Each export frame's H.264 coded picture compared bit-for-bit with recorder frames.</p>
+<table><thead><tr><th>Export</th><th>Verdict</th><th>Frames matched</th><th>Edits</th></tr></thead>
+{% for r in c.provenance %}<tr><td>{{ r.file }}</td><td>{{ r.verdict }}</td><td>{{ r.frames_matched }} / {{ r.frames }}</td><td>{% for e in r.edits %}{{ e.summary }}<br>{% endfor %}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.poison_scorecard %}<h2>7c. Planted manipulations and what caught them</h2>
+<table><thead><tr><th>#</th><th>Item</th><th>Planted</th><th>Caught</th><th>By</th></tr></thead>
+{% for p in c.poison_scorecard %}<tr><td>{{ p.id }}</td><td>{{ p.evidence }}</td><td>{{ p.what }}</td><td>{{ "yes" if p.caught else "NO" }}</td><td>{{ p.by | join("; ") }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.ai and c.ai.scoring %}<h2>7d. AI activity events against human labels</h2>
+<p>Recall {{ c.ai.scoring.recall }} on {{ c.ai.scoring.scorable }} scorable labels ({{ c.ai.scoring.hits }} hits); precision lower bound {{ c.ai.scoring.precision_lower_bound }}; {{ c.ai.scoring.destroyed }} labels fall in destroyed footage; {{ c.ai.scoring.not_modelled }} not modelled. {{ c.ai.scoring.method }}.</p>{% endif %}
+
+{% if c.reviews %}<h2>7e. AI leads reviewed by the examiner</h2>
+<p class="muted">Only leads the examiner accepted are findings. Rejected and unresolved leads are listed for completeness.</p>
+<table><thead><tr><th>Lead</th><th>Decision</th><th>Statement</th><th>Examiner note</th><th>When (UTC)</th></tr></thead>
+{% for k, v in c.reviews.items() %}<tr><td class="mono">{{ k }}</td><td>{{ v.decision }}</td><td>{{ v.statement }}</td><td>{{ v.note }}</td><td>{{ v.utc }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.ps_flags %}<h2>7f. SIH26150 requirements demonstrated in this case</h2>
+<table><thead><tr><th>Requirement</th><th>Status</th><th>Shown by</th></tr></thead>
+{% for f in c.ps_flags %}<tr><td>{{ f.requirement }}</td><td>{{ f.status }}</td><td>{{ f.evidence }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.report_frames %}<h2>7g. Key frames</h2>
+<p class="muted">One frame per camera from the recovered clip, so a reader sees what each camera recorded. Each image is a derivative; its hash and the hash of the clip it came from are listed.</p>
+<table><tbody>{% for f in c.report_frames %}{% if loop.index0 % 2 == 0 %}<tr>{% endif %}
+<td style="width:50%"><img src="{{ f.file }}" style="width:100%;border:1px solid #ccc"><div><b>{{ f.camera }}</b> · clip {{ f.clip }} · {{ f.level }}{% if f.recorder_ms %} · {{ f.recorder_ms | ms }}{% endif %}</div>
+<div class="mono">frame sha256 {{ f.sha256 }}<br>clip sha256 {{ f.clip_sha256 }}</div></td>
+{% if loop.index0 % 2 == 1 or loop.last %}</tr>{% endif %}{% endfor %}</tbody></table>{% endif %}
+
+{% if c.sakshilekh %}<h2>7h. Examiner findings (Sakshilekh)</h2>
+<p class="muted">Written by the examiner while viewing the footage; separate from machine output. Each finding is anchored to a clip interval and logged to the custody chain.</p>
+{% for n in c.sakshilekh %}<table class="kv" style="margin-bottom:10px"><tr><td>{{ n.id }} · {{ n.camera }}</td><td><b>{{ n.text }}</b></td></tr>
+<tr><td>Interval</td><td>clip {{ n.clip }}, {{ n.from_s }}–{{ n.to_s }} s{% if n.recorder_from_ms %} · recorder time {{ n.recorder_from_ms | ms }}{% endif %}</td></tr>
+<tr><td>Examiner</td><td>{{ n.examiner }} · {{ n.utc }}</td></tr>
+{% if n.frame %}<tr><td>Frame</td><td><img src="{{ n.frame }}" style="width:60%;border:1px solid #ccc"><div class="mono">sha256 {{ n.frame_sha256 }}</div></td></tr>{% endif %}</table>{% endfor %}{% endif %}
+
+{% if c.kaalshodhan %}<h2>7i. Recorder clock corrections (Kaalshodhan)</h2>
+<p class="muted">Real-world time = recorder time + offset. Recorder times elsewhere in this report are unchanged; the newest entry per item applies.</p>
+<table><thead><tr><th>Item</th><th>Offset</th><th>Basis</th><th>Reference</th><th>Examiner · time</th></tr></thead>
+{% for o in c.kaalshodhan %}<tr><td>{{ o.evidence }}</td><td>{{ "%+.3f"|format(o.offset_s) }} s</td><td>{{ o.reason }}</td><td>{{ o.reference }}</td><td>{{ o.examiner }} · {{ o.utc }}</td></tr>{% endfor %}</table>{% endif %}
+
+{% if c.khandmudra %}<h2>7j. Exported segments (Khandmudra)</h2>
+<table><thead><tr><th>ID</th><th>Camera · clip</th><th>Requested</th><th>Frames</th><th>Purpose</th><th>Segment sha256 / source sha256</th></tr></thead>
+{% for s in c.khandmudra %}<tr><td>{{ s.id }}</td><td>{{ s.camera }} · {{ s.clip }}</td><td>{{ s.asked_from_s }}–{{ s.asked_to_s }} s</td><td>{{ s.frames }}</td><td>{{ s.purpose }}</td><td class="mono">{{ s.sha256 }}<br>{{ s.source_mp4_sha256 }}</td></tr>{% endfor %}</table>
+<p class="muted">Cut by stream copy without re-encoding; a segment starts at the nearest earlier keyframe.</p>{% endif %}
+
+{% if c.punarnirmiti %}<h2>7k. Replay capsule (Punarnirmiti)</h2>
+<p>A signed capsule lists the byte ranges of the preserved images behind all {{ c.punarnirmiti.clips }} recovered clip(s) ({{ "{:,}".format(c.punarnirmiti.ranges) }} ranges). Any reviewer holding the capsule and the images can rebuild each clip and compare hashes without this software's parsers.</p>
+<table class="kv"><tr><td>Sealed</td><td>{{ c.punarnirmiti.created_utc }}</td></tr><tr><td>Ed25519 key fingerprint</td><td class="mono">{{ c.punarnirmiti.key_fingerprint }}</td></tr>
+<tr><td>Signature at report time</td><td>{{ "valid" if c.punarnirmiti.signature_ok else "INVALID" }}</td></tr></table>{% endif %}
+
+<h2>8. Method, tools and limitations</h2>
+<ul>
+<li>Recovery walks the whole source. A native parser for the detected family runs first; a vendor-agnostic H.264 carver then sweeps every byte the parser did not claim.</li>
+<li>Frames are validated structurally (Dahua: matching DHAV header and footer; MPEG-PS: complete pack and PES lengths) before they are counted.</li>
+<li>Times are shown as stored by the recorder (its local clock); overlay clocks are compared with them per camera.</li>
+<li>Tools: {% for k, v in c.tool.components.items() %}{{ k }} {{ v }}{% if not loop.last %}; {% endif %}{% endfor %}.</li>
+{% for l in c.limitations %}<li>{{ l }}</li>{% endfor %}
+</ul>
+
+<h2 class="pb">Annex A. Data for the BSA s.63(4) certificate</h2>
+<div class="note">This sheet collects the facts the Schedule certificate asks for. Transcribe them onto the official Schedule form (Part A by the party producing the record; Part B by the expert). It is not itself the certificate. Fields marked ✎ must be completed by a person.</div>
+<h3>Part A — produced electronic record</h3>
+<table class="kv">
+<tr><td>Device type</td><td>Digital video recorder (DVR/NVR) storage</td></tr>
+<tr><td>Make / model / serial number</td><td>✎ (detected format family: {{ c.detection.family }})</td></tr>
+<tr><td>Storage medium details</td><td>✎ HDD make, model, serial, capacity ({{ "{:,}".format(c.evidence.bytes) }} bytes read)</td></tr>
+<tr><td>Under lawful control of</td><td>✎</td></tr>
+<tr><td>Hash algorithm(s)</td><td>SHA-256 (primary), MD5 (secondary)</td></tr>
+<tr><td>Hash of source / forensic image</td><td class="mono">SHA-256 {{ c.evidence.before.sha256 }}<br>MD5 {{ c.evidence.before.md5 }}</td></tr>
+<tr><td>Produced records (clips) and their SHA-256</td><td class="mono">{% for k in c.clips if k.mp4_sha256 %}{{ k.mp4_file }} {{ k.mp4_sha256 }}<br>{% endfor %}</td></tr>
+</table>
+<h3>Part B — expert</h3>
+<table class="kv">
+<tr><td>Examiner</td><td>{{ c.case.examiner }} ✎ designation and organisation</td></tr>
+<tr><td>Examination performed</td><td>{{ c.generated_utc }} UTC using {{ c.tool.name }} {{ c.tool.version }}</td></tr>
+<tr><td>Method summary</td><td>Read-only analysis of the hashed source; format-family identification; index parsing and structural carving; per-clip export with SHA-256; custody ledger with hash chain.</td></tr>
+<tr><td>Integrity statement data</td><td>Source SHA-256 before analysis {{ "equals" if c.evidence.unchanged else "DIFFERS FROM" }} after analysis.</td></tr>
+<tr><td>Signature, date, place</td><td>✎</td></tr>
+</table>
+
+<h2>Annex B. Chain of custody</h2>
+<p>Ledger status: <b>{{ c.custody.status }}</b></p>
+<table><thead><tr><th>#</th><th>UTC</th><th>Actor</th><th>Action</th><th>Entry hash</th></tr></thead>
+{% for e in c.custody.entries %}<tr><td>{{ e.seq }}</td><td>{{ e.utc }}</td><td>{{ e.actor }}</td><td>{{ e.action }}</td><td class="mono">{{ e.hash[:24] }}…</td></tr>{% endfor %}
+</table>
+</body></html>

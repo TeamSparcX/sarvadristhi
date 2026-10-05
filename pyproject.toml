@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sarvadristhi"
+version = "0.1.0"
+description = "Multi-vendor DVR/NVR forensic analysis (SIH26150)"
+requires-python = ">=3.10"
+dependencies = ["numpy", "opencv-python-headless", "jinja2"]
+
+[project.optional-dependencies]
+pdf = ["weasyprint"]
+e01 = ["libewf-python"]
+ai = ["rfdetr"]
+test = ["pytest"]
+
+[project.scripts]
+sarvadristhi = "sarvadristhi.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["sarvadristhi*", "pramanshala*"]
+
+[tool.setuptools.package-data]
+"sarvadristhi.report" = ["template.html"]
+"sarvadristhi" = ["ui_static/*.html", "ui_static/vendor/*.js", "capabilities.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

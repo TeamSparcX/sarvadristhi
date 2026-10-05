@@ -1,0 +1,742 @@
+{
+  "case": {
+    "case_id": "SIH26150-DEMO",
+    "examiner": "Team SPARCX"
+  },
+  "generated_utc": "2026-10-04 11:42:05",
+  "tool": {
+    "name": "sarvadristhi",
+    "version": "0.1.0",
+    "components": {
+      "ffmpeg": "6.1.1-3ubuntu5",
+      "tesseract": "5.3.4",
+      "opencv": "4.13.0"
+    }
+  },
+  "options": {
+    "mode": "auto",
+    "export": true,
+    "analytics": true,
+    "overlay": true
+  },
+  "evidence": {
+    "source": "/tmp/k4a/images/hikvision_overwritten.img",
+    "bytes": 352321536,
+    "before": {
+      "md5": "ea476dd4500bd94ea418926241318b96",
+      "sha256": "1b6e3fc590fd7f7214a3f4d2810fabb980ba453a1980a09f9f18e8eef4aadb20"
+    },
+    "after": {
+      "md5": "ea476dd4500bd94ea418926241318b96",
+      "sha256": "1b6e3fc590fd7f7214a3f4d2810fabb980ba453a1980a09f9f18e8eef4aadb20"
+    },
+    "unchanged": true
+  },
+  "acquisition": null,
+  "e01": null,
+  "detection": {
+    "family": "hikvision",
+    "plugin": "hikvision",
+    "confidence": 0.99,
+    "brands_using_family": [
+      "Hikvision",
+      "HiWatch",
+      "Prama Hikvision",
+      "Hikvision OEMs (verify per model)"
+    ],
+    "candidates": [
+      {
+        "plugin": "hikvision",
+        "family": "hikvision",
+        "confidence": 0.99,
+        "evidence": {
+          "signature": "HIKVISION@HANGZHOU",
+          "master_sector_offset": 512,
+          "partition_offset": 0
+        }
+      },
+      {
+        "plugin": "universal",
+        "family": "unknown",
+        "confidence": 0.3,
+        "evidence": {
+          "ps_pack_headers_first_256MiB": 5401
+        }
+      },
+      {
+        "plugin": "dahua",
+        "family": "dahua-dhav",
+        "confidence": 0.0,
+        "evidence": {}
+      }
+    ],
+    "source_bytes": 352321536
+  },
+  "recovery": {
+    "mode": "native",
+    "plugin": "hikvision",
+    "frames": 5401,
+    "levels": {
+      "index-confirmed": 1200,
+      "content-only": 11,
+      "carved + timestamp": 4190
+    },
+    "master_sector": {
+      "offset": 512,
+      "partition_offset": 0,
+      "capacity": 352321536,
+      "logs_offset": 1048576,
+      "logs_size": 1048576,
+      "video_offset": 4194304,
+      "block_size": 4194304,
+      "total_blocks": 83,
+      "btree1_offset": 2097152,
+      "btree1_size": 524288,
+      "btree2_offset": 2621440,
+      "btree2_size": 524288,
+      "init_time": 1790630820
+    },
+    "logs": [
+      {
+        "offset": 1048576,
+        "time": 1790629980,
+        "time_utc": "2026-09-28T21:13:00+00:00",
+        "type": 3,
+        "type_name": "power/login/shutdown",
+        "text": "Power On"
+      },
+      {
+        "offset": 1048599,
+        "time": 1790630040,
+        "time_utc": "2026-09-28T21:14:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Start Recording CH01"
+      },
+      {
+        "offset": 1048634,
+        "time": 1790630040,
+        "time_utc": "2026-09-28T21:14:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Start Recording CH02"
+      },
+      {
+        "offset": 1048669,
+        "time": 1790630040,
+        "time_utc": "2026-09-28T21:14:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Start Recording CH03"
+      },
+      {
+        "offset": 1048704,
+        "time": 1790630070,
+        "time_utc": "2026-09-28T21:14:30+00:00",
+        "type": 1,
+        "type_name": "motion",
+        "text": "Start Motion Detect CH01"
+      },
+      {
+        "offset": 1048743,
+        "time": 1790630115,
+        "time_utc": "2026-09-28T21:15:15+00:00",
+        "type": 1,
+        "type_name": "motion",
+        "text": "Start Motion Detect CH02"
+      },
+      {
+        "offset": 1048782,
+        "time": 1790630170,
+        "time_utc": "2026-09-28T21:16:10+00:00",
+        "type": 1,
+        "type_name": "motion",
+        "text": "Start Motion Detect CH03"
+      },
+      {
+        "offset": 1048821,
+        "time": 1790630220,
+        "time_utc": "2026-09-28T21:17:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Stop Recording CH01"
+      },
+      {
+        "offset": 1048855,
+        "time": 1790630220,
+        "time_utc": "2026-09-28T21:17:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Stop Recording CH02"
+      },
+      {
+        "offset": 1048889,
+        "time": 1790630220,
+        "time_utc": "2026-09-28T21:17:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Stop Recording CH03"
+      },
+      {
+        "offset": 1048923,
+        "time": 1790630820,
+        "time_utc": "2026-09-28T21:27:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "HDD Initialize"
+      },
+      {
+        "offset": 1048952,
+        "time": 1790630910,
+        "time_utc": "2026-09-28T21:28:30+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "Start Recording CH01"
+      }
+    ],
+    "index_entries": 2,
+    "universal_sweep": {
+      "unclaimed_video_units": 0,
+      "regions": []
+    },
+    "attribution": null,
+    "fragments": 0
+  },
+  "findings": [
+    {
+      "kind": "format-event",
+      "severity": "critical",
+      "summary": "System log records a disk initialise/format at 2026-09-28T21:27:00+00:00",
+      "detail": {
+        "offset": 1048923,
+        "time": 1790630820,
+        "time_utc": "2026-09-28T21:27:00+00:00",
+        "type": 4,
+        "type_name": "hdd/recording",
+        "text": "HDD Initialize"
+      }
+    },
+    {
+      "kind": "index-reset",
+      "severity": "critical",
+      "summary": "4 data block(s) hold video that the live index does not list; 4190 recovered frames predate the filesystem initialisation time 2026-09-28T21:27:00+00:00",
+      "detail": {
+        "orphan_blocks": 4,
+        "frames_not_in_index": 4201,
+        "frames_before_init": 4190
+      }
+    },
+    {
+      "kind": "clock-change",
+      "severity": "critical",
+      "summary": "Camera 1: overlay-to-recorder offset changes during recording (+0 s to -900 s) between 21:15:58 and 21:16:07 recorder time: possible clock adjustment",
+      "detail": {
+        "channel": 1,
+        "steps": [
+          {
+            "before_s": 0,
+            "after_s": -900,
+            "between_ms": [
+              1790630158000,
+              1790630167000
+            ]
+          },
+          {
+            "before_s": -900,
+            "after_s": 0,
+            "between_ms": [
+              1790630212000,
+              1790630911000
+            ]
+          }
+        ],
+        "time": 1790630167
+      }
+    },
+    {
+      "kind": "clock-drift",
+      "severity": "warning",
+      "summary": "Camera 2: burned-in clock is +47 s from the recorder timestamp",
+      "detail": {
+        "channel": 2,
+        "drift_s": 47.0,
+        "samples": 24
+      }
+    },
+    {
+      "kind": "clock-drift",
+      "severity": "warning",
+      "summary": "Camera 3: burned-in clock is -312 s from the recorder timestamp",
+      "detail": {
+        "channel": 3,
+        "drift_s": -312.0,
+        "samples": 59
+      }
+    },
+    {
+      "kind": "recording-gap",
+      "severity": "info",
+      "summary": "Camera 1: no recovered video for 690 s between C0001-CH01 and C0002-CH01",
+      "detail": {
+        "channel": 1,
+        "from_ms": 1790630219900,
+        "to_ms": 1790630910000,
+        "seconds": 690.1
+      }
+    }
+  ],
+  "cameras": [
+    {
+      "channel": 1,
+      "clips": 2,
+      "frames": 2090,
+      "label": "CAM-01 MAIN GATE",
+      "drift": {
+        "drift_s": 0.0,
+        "samples": 24,
+        "agreeing": 18,
+        "mad_s": 0.0,
+        "label": "CAM-01 MAIN GATE"
+      }
+    },
+    {
+      "channel": 2,
+      "clips": 1,
+      "frames": 1500,
+      "label": "CAM-02 PARKING",
+      "drift": {
+        "drift_s": 47.0,
+        "samples": 24,
+        "agreeing": 24,
+        "mad_s": 0.0,
+        "label": "CAM-02 PARKING"
+      }
+    },
+    {
+      "channel": 3,
+      "clips": 1,
+      "frames": 1800,
+      "label": "CAM-03 CORRIDOR",
+      "drift": {
+        "drift_s": -312.0,
+        "samples": 59,
+        "agreeing": 56,
+        "mad_s": 0,
+        "label": "CAM-03 CORRIDOR"
+      }
+    }
+  ],
+  "clips": [
+    {
+      "id": "C0001-CH01",
+      "channel": 1,
+      "label": null,
+      "frames": 890,
+      "keyframes": 89,
+      "start_ms": 1790630131000,
+      "end_ms": 1790630219900,
+      "fps": 10.0,
+      "evidence_level": "carved + timestamp",
+      "levels": {
+        "carved + timestamp": 890
+      },
+      "time_source": [
+        "ofni"
+      ],
+      "first_offset": 20971520,
+      "bytes": 3995289,
+      "raw_file": "C0001-CH01.h264",
+      "raw_sha256": "fb3214f0c794375c64f68863cfcd022c02424286425801057918767e9f85b8c3",
+      "mp4_file": "C0001-CH01.mp4",
+      "mp4_sha256": "d387c723d4c139853e48ad6e1aea9abafeab2a4f992cd56085940ebbce0735d2"
+    },
+    {
+      "id": "C0002-CH01",
+      "channel": 1,
+      "label": null,
+      "frames": 1200,
+      "keyframes": 120,
+      "start_ms": 1790630910000,
+      "end_ms": 1790631029900,
+      "fps": 10.0,
+      "evidence_level": "index-confirmed",
+      "levels": {
+        "index-confirmed": 1200
+      },
+      "time_source": [
+        "index"
+      ],
+      "first_offset": 4194304,
+      "bytes": 5452036,
+      "raw_file": "C0002-CH01.h264",
+      "raw_sha256": "732a8097f3d17d5f5caa498032baa1c730df098f014ad67916043d1b25e1dc39",
+      "mp4_file": "C0002-CH01.mp4",
+      "mp4_sha256": "9500bbd90ad43301eb98eaed4fa2479904e667bbb8ebb487956b8ad624b2dcc3"
+    },
+    {
+      "id": "C0003-CH02",
+      "channel": 2,
+      "label": null,
+      "frames": 1500,
+      "keyframes": 150,
+      "start_ms": 1790630070000,
+      "end_ms": 1790630219900,
+      "fps": 10.0,
+      "evidence_level": "carved + timestamp",
+      "levels": {
+        "carved + timestamp": 1500
+      },
+      "time_source": [
+        "ofni"
+      ],
+      "first_offset": 9737959,
+      "bytes": 6719981,
+      "raw_file": "C0003-CH02.h264",
+      "raw_sha256": "3b4dce74575476f2505dbb654166aaa95eb0328342267c47c339a47bd9bdadaa",
+      "mp4_file": "C0003-CH02.mp4",
+      "mp4_sha256": "6f78181db51fcd287714b94e075f153c0d8a5e38473ac2bb500f8bf76742c28f"
+    },
+    {
+      "id": "C0004-CH03",
+      "channel": 3,
+      "label": null,
+      "frames": 1800,
+      "keyframes": 180,
+      "start_ms": 1790630040000,
+      "end_ms": 1790630219900,
+      "fps": 10.0,
+      "evidence_level": "carved + timestamp",
+      "levels": {
+        "carved + timestamp": 1800
+      },
+      "time_source": [
+        "ofni"
+      ],
+      "first_offset": 12582912,
+      "bytes": 8286232,
+      "raw_file": "C0004-CH03.h264",
+      "raw_sha256": "1a4d01177734f26dc83b1ace2a1b6e3f2ad3874e3ca2cfe41fe991551de1403c",
+      "mp4_file": "C0004-CH03.mp4",
+      "mp4_sha256": "872b5ede83cc55289045e16c62f841c7b0a4779bdded43db620256a4ade6f07e"
+    },
+    {
+      "id": "C0005",
+      "channel": null,
+      "label": null,
+      "frames": 2,
+      "keyframes": 0,
+      "start_ms": null,
+      "end_ms": null,
+      "fps": 25.0,
+      "evidence_level": "content-only",
+      "levels": {
+        "content-only": 2
+      },
+      "time_source": [
+        "none"
+      ],
+      "first_offset": 8338039,
+      "bytes": 3719,
+      "raw_file": "C0005.h264",
+      "raw_sha256": "1b21f3e38463e23f76171c46fa90d4f68024752020801e5042685a815acb023e",
+      "mp4_error": "no keyframe: frames are recovered but cannot be decoded on their own"
+    },
+    {
+      "id": "C0006",
+      "channel": null,
+      "label": null,
+      "frames": 9,
+      "keyframes": 0,
+      "start_ms": null,
+      "end_ms": null,
+      "fps": 25.0,
+      "evidence_level": "content-only",
+      "levels": {
+        "content-only": 9
+      },
+      "time_source": [
+        "none"
+      ],
+      "first_offset": 9714115,
+      "bytes": 23844,
+      "raw_file": "C0006.h264",
+      "raw_sha256": "9b93fbdc87c26829e2a45749ae716c06a9f905aa619ca72fd7d2461a9075cb30",
+      "mp4_error": "no keyframe: frames are recovered but cannot be decoded on their own"
+    }
+  ],
+  "events": [
+    {
+      "type": "moving-object",
+      "start_s": 20.0,
+      "end_s": 23.75,
+      "confidence": 0.86,
+      "basis": "background subtraction, compact foreground blob",
+      "channel": 1,
+      "clip": "C0002-CH01",
+      "abs_start_ms": 1790630930000,
+      "abs_end_ms": 1790630933750
+    },
+    {
+      "type": "moving-object",
+      "start_s": 45.25,
+      "end_s": 48.75,
+      "confidence": 0.79,
+      "basis": "background subtraction, compact foreground blob",
+      "channel": 2,
+      "clip": "C0003-CH02",
+      "abs_start_ms": 1790630115250,
+      "abs_end_ms": 1790630118750
+    }
+  ],
+  "ai_triage": {},
+  "limitations": [
+    "Dahua DHFS index structures are not parsed; Dahua-family frames are carved and carry the recorder timestamp from each DHAV header (evidence level: carved + timestamp).",
+    "The universal path attributes camera and time from burned-in overlays; footage without overlays is recovered as content-only. PRNU sensor-noise clustering is not yet implemented.",
+    "Motion triage misses objects against full-frame moving texture (heavy rain, foliage, noise)."
+  ],
+  "timeline": {
+    "items": [
+      {
+        "kind": "log",
+        "start_ms": 1790629980000,
+        "text": "Power On",
+        "type": "power/login/shutdown"
+      },
+      {
+        "kind": "clip",
+        "channel": 3,
+        "start_ms": 1790630040000,
+        "end_ms": 1790630219900,
+        "id": "C0004-CH03",
+        "level": "carved + timestamp"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630040000,
+        "text": "Start Recording CH01",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630040000,
+        "text": "Start Recording CH02",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630040000,
+        "text": "Start Recording CH03",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "clip",
+        "channel": 2,
+        "start_ms": 1790630070000,
+        "end_ms": 1790630219900,
+        "id": "C0003-CH02",
+        "level": "carved + timestamp"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630070000,
+        "text": "Start Motion Detect CH01",
+        "type": "motion"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630115000,
+        "text": "Start Motion Detect CH02",
+        "type": "motion"
+      },
+      {
+        "kind": "event",
+        "type": "moving-object",
+        "start_s": 45.25,
+        "end_s": 48.75,
+        "confidence": 0.79,
+        "basis": "background subtraction, compact foreground blob",
+        "channel": 2,
+        "clip": "C0003-CH02",
+        "abs_start_ms": 1790630115250,
+        "abs_end_ms": 1790630118750,
+        "start_ms": 1790630115250
+      },
+      {
+        "kind": "clip",
+        "channel": 1,
+        "start_ms": 1790630131000,
+        "end_ms": 1790630219900,
+        "id": "C0001-CH01",
+        "level": "carved + timestamp"
+      },
+      {
+        "kind": "finding",
+        "start_ms": 1790630167000,
+        "text": "Camera 1: overlay-to-recorder offset changes during recording (+0 s to -900 s) between 21:15:58 and 21:16:07 recorder time: possible clock adjustment",
+        "severity": "critical"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630170000,
+        "text": "Start Motion Detect CH03",
+        "type": "motion"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630220000,
+        "text": "Stop Recording CH01",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630220000,
+        "text": "Stop Recording CH02",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630220000,
+        "text": "Stop Recording CH03",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630820000,
+        "text": "HDD Initialize",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "finding",
+        "start_ms": 1790630820000,
+        "text": "System log records a disk initialise/format at 2026-09-28T21:27:00+00:00",
+        "severity": "critical"
+      },
+      {
+        "kind": "clip",
+        "channel": 1,
+        "start_ms": 1790630910000,
+        "end_ms": 1790631029900,
+        "id": "C0002-CH01",
+        "level": "index-confirmed"
+      },
+      {
+        "kind": "log",
+        "start_ms": 1790630910000,
+        "text": "Start Recording CH01",
+        "type": "hdd/recording"
+      },
+      {
+        "kind": "event",
+        "type": "moving-object",
+        "start_s": 20.0,
+        "end_s": 23.75,
+        "confidence": 0.86,
+        "basis": "background subtraction, compact foreground blob",
+        "channel": 1,
+        "clip": "C0002-CH01",
+        "abs_start_ms": 1790630930000,
+        "abs_end_ms": 1790630933750,
+        "start_ms": 1790630930000
+      }
+    ],
+    "channels": [
+      1,
+      2,
+      3
+    ]
+  },
+  "custody": {
+    "ok": true,
+    "status": "6 entries, chain intact",
+    "entries": [
+      {
+        "action": "case-opened",
+        "actor": "root",
+        "details": {
+          "case_id": "SIH26150-DEMO",
+          "examiner": "Team SPARCX",
+          "tool": "sarvadristhi 0.1.0"
+        },
+        "hash": "b794702da2f82efe3bf11940f9d13a7ac0ca64d25675b67e3a4274a724657ee6",
+        "host": "vm",
+        "prev": "0000000000000000000000000000000000000000000000000000000000000000",
+        "seq": 0,
+        "utc": "2026-10-04T11:41:09+00:00"
+      },
+      {
+        "action": "evidence-registered",
+        "actor": "root",
+        "details": {
+          "md5": "ea476dd4500bd94ea418926241318b96",
+          "path": "/tmp/k4a/images/hikvision_overwritten.img",
+          "sha256": "1b6e3fc590fd7f7214a3f4d2810fabb980ba453a1980a09f9f18e8eef4aadb20"
+        },
+        "hash": "fd53fcb13a7b19b9a7ba8ad5cd9df1f2076f7e875cbfbc6ffab2f8a281347085",
+        "host": "vm",
+        "prev": "b794702da2f82efe3bf11940f9d13a7ac0ca64d25675b67e3a4274a724657ee6",
+        "seq": 1,
+        "utc": "2026-10-04T11:41:10+00:00"
+      },
+      {
+        "action": "recovery",
+        "actor": "root",
+        "details": {
+          "family": "hikvision",
+          "frames": 5401,
+          "plugin": "hikvision"
+        },
+        "hash": "9eeaadf4aa029ad0b5f86f5572929e9894833590ddd0b62104b8cacd3d0c7f32",
+        "host": "vm",
+        "prev": "fd53fcb13a7b19b9a7ba8ad5cd9df1f2076f7e875cbfbc6ffab2f8a281347085",
+        "seq": 2,
+        "utc": "2026-10-04T11:41:12+00:00"
+      },
+      {
+        "action": "clips-exported",
+        "actor": "root",
+        "details": {
+          "clips": {
+            "C0001-CH01": "d387c723d4c139853e48ad6e1aea9abafeab2a4f992cd56085940ebbce0735d2",
+            "C0002-CH01": "9500bbd90ad43301eb98eaed4fa2479904e667bbb8ebb487956b8ad624b2dcc3",
+            "C0003-CH02": "6f78181db51fcd287714b94e075f153c0d8a5e38473ac2bb500f8bf76742c28f",
+            "C0004-CH03": "872b5ede83cc55289045e16c62f841c7b0a4779bdded43db620256a4ade6f07e",
+            "C0005": null,
+            "C0006": null
+          }
+        },
+        "hash": "c5440ef46b0c64328a6c272aed3ca672d80ccc10fad12ce958707c9f18eece1e",
+        "host": "vm",
+        "prev": "9eeaadf4aa029ad0b5f86f5572929e9894833590ddd0b62104b8cacd3d0c7f32",
+        "seq": 3,
+        "utc": "2026-10-04T11:41:54+00:00"
+      },
+      {
+        "action": "post-analysis-verification",
+        "actor": "root",
+        "details": {
+          "md5": "ea476dd4500bd94ea418926241318b96",
+          "sha256": "1b6e3fc590fd7f7214a3f4d2810fabb980ba453a1980a09f9f18e8eef4aadb20",
+          "unchanged": true
+        },
+        "hash": "3ab019280ab63111c823f12d8e7e63078d821b86cdfe603b2b36b89aa1c966ce",
+        "host": "vm",
+        "prev": "c5440ef46b0c64328a6c272aed3ca672d80ccc10fad12ce958707c9f18eece1e",
+        "seq": 4,
+        "utc": "2026-10-04T11:42:05+00:00"
+      },
+      {
+        "action": "results-written",
+        "actor": "root",
+        "details": {
+          "clips": 6,
+          "findings": 6
+        },
+        "hash": "be5c8b7a00af2fbcc80b946b76b0a77c299ce3847174c5d9ff8f80471158921d",
+        "host": "vm",
+        "prev": "3ab019280ab63111c823f12d8e7e63078d821b86cdfe603b2b36b89aa1c966ce",
+        "seq": 5,
+        "utc": "2026-10-04T11:42:05+00:00"
+      }
+    ]
+  }
+}
