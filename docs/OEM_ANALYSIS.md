@@ -1,4 +1,4 @@
-# Comparative analysis of DVR/NVR OEMs (SIH26150 deliverable)
+# Comparative analysis of DVR/NVR OEMs
 
 As of October 2026. "Verified" means checked by this project against independent tools or
 published research; "unverified" means no sample has been examined yet.

@@ -799,7 +799,7 @@ def sources(app, drives: bool = True) -> dict:
     sc = kit / "scenario"
     items = [sc / "images" / n for n in ("DVR-A_hikvision.img", "DVR-B_dahua.img", "USB_shiftB.vhd")]
     if (sc / "scenario.json").exists() and all(p.exists() for p in items):
-        presets.append({"title": "OPERATION DEMO · one run, everything the PS asks",
+        presets.append({"title": "OPERATION DEMO · one run, every capability",
                         "sub": "Real CCTV footage (MEVA, CC-BY-4.0) on a deliberately poisoned Hikvision DVR, Dahua DVR and "
                                "USB stick: format, overwrite, clock change, deleted export, edited export, disguised file",
                         "paths": [str(p) for p in items], "path": str(items[0]), "scenario": True,

@@ -1,4 +1,4 @@
-# Validation report (SIH26150 deliverable)
+# Validation report
 
 Sarvadristhi 0.1.0 on dvr-pramanshala 0.4.0 · October 2026
 

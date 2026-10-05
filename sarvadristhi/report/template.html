@@ -121,7 +121,7 @@
 <table><thead><tr><th>Lead</th><th>Decision</th><th>Statement</th><th>Examiner note</th><th>When (UTC)</th></tr></thead>
 {% for k, v in c.reviews.items() %}<tr><td class="mono">{{ k }}</td><td>{{ v.decision }}</td><td>{{ v.statement }}</td><td>{{ v.note }}</td><td>{{ v.utc }}</td></tr>{% endfor %}</table>{% endif %}
 
-{% if c.ps_flags %}<h2>7f. SIH26150 requirements demonstrated in this case</h2>
+{% if c.ps_flags %}<h2>7f. Requirements demonstrated in this case</h2>
 <table><thead><tr><th>Requirement</th><th>Status</th><th>Shown by</th></tr></thead>
 {% for f in c.ps_flags %}<tr><td>{{ f.requirement }}</td><td>{{ f.status }}</td><td>{{ f.evidence }}</td></tr>{% endfor %}</table>{% endif %}
 

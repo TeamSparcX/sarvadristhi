@@ -1,6 +1,6 @@
 # Contributor guide: download, run, and change Sarvadristhi
 
-Welcome to **ProjectR** (Sarvadristhi, our SIH26150 DVR/NVR forensic workbench). By the end of this guide you will
+Welcome to **ProjectR** (Sarvadristhi, our DVR/NVR forensic workbench). By the end of this guide you will
 have the code and all demo data on your Windows PC, the workbench running in your browser, and a working
 way to make and submit changes.
 
@@ -124,7 +124,7 @@ tracker and the live log show progress; open the case when it says done.
 
 | Tab | What to look at |
 |---|---|
-| Command | Flag board of SIH26150 requirements, planted-vs-caught scorecard, evidence cards, verified AI summary, AI accuracy against human labels |
+| Command | Flag board of requirements, planted-vs-caught scorecard, evidence cards, verified AI summary, AI accuracy against human labels |
 | Timeline & video | Every camera on one recorder clock; press Play for the synchronised video wall with AI boxes; click the timeline to jump |
 | Disk & hex | Where each kind of data sits on each disk image; click a cell to read the original bytes |
 | Provenance | USB exports matched frame-by-frame to the DVR: "only surviving copy" and "6.0 s removed" |

@@ -6,7 +6,7 @@ from .build import build
 
 def main():
     ap = argparse.ArgumentParser(prog="python -m pramanshala",
-                                 description="Build SIH26150 Phase 0 DVR/NVR test evidence")
+                                 description="Build DVR/NVR test evidence")
     ap.add_argument("out", type=Path, help="output directory")
     ap.add_argument("--seconds", type=int, default=180, help="recording length per camera")
     ap.add_argument("--fps", type=int, default=10)

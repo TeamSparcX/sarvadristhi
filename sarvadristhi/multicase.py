@@ -8,7 +8,7 @@ the case merges them on one recorder clock and adds what only a multi-item case 
   label scoring   activity events against human labels, when the case carries them
   poison check    when the evidence is a planted test bench (scenario.json), every planted
                   manipulation against the finding that caught it
-  PS flag board   each SIH26150 requirement with the case data that demonstrates it
+  flag board      each requirement with the case data that demonstrates it
   lineage         for every clip: source image + hash -> byte range -> method -> frames ->
                   clip hash; every AI lead and finding carries its clip and time basis"""
 import json
@@ -234,7 +234,7 @@ def run(sources: list[dict], case_dir: Path, case_id: str, examiner: str, *, ai:
             poison.append({**p, "caught": bool(hit), "by": hit[:3]})
         led.append("poison-scorecard", caught=sum(p["caught"] for p in poison), planted=len(poison))
 
-    # ------------------------------------------------------------------ PS flag board
+    # ------------------------------------------------------------------ requirement flag board
     ps = ps_flags(evidence, clips, findings, prov, ai_out, scoring)
 
     # ------------------------------------------------------------------ timeline + case

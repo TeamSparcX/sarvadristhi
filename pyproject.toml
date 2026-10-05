@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sarvadristhi"
 version = "0.1.0"
-description = "Multi-vendor DVR/NVR forensic analysis (SIH26150)"
+description = "Multi-vendor DVR/NVR forensic analysis"
 requires-python = ">=3.10"
 dependencies = ["numpy", "opencv-python-headless", "jinja2"]
 

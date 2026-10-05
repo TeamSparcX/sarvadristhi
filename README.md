@@ -1,4 +1,4 @@
-# Sarvadristhi — multi-vendor DVR/NVR forensic analysis (SIH26150)
+# Sarvadristhi — multi-vendor DVR/NVR forensic analysis
 
 > **Start here (Windows):** [docs/RUN_A_TO_Z.md](docs/RUN_A_TO_Z.md) — setup, demo data, running the
 > Forensic Workbench and the one-run "Operation demo".
@@ -90,7 +90,7 @@ A light, offline browser workbench on 127.0.0.1.
 
 | Module | What it does |
 |---|---|
-| **Case overview** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, PS flags |
+| **Case overview** | Case overview: a still from the key camera, the verdict panel, evidence cards, camera rail, findings, requirement flags |
 | **Frame X-ray** | Frame-to-byte X-ray: while a clip plays, a disk ribbon and a hex panel follow the frame on screen, showing where its bytes are on the seized image and decoding the recorder's own header (DHAV, Honeywell record, MPEG-PS/PES, NAL) |
 | **Presentation** | Presentation mode: ten guided steps from seizure to verdict, with live case facts (`#/present/<case>`) |
 | **Format hypotheses** | Format hypotheses: every parser's interpretation of each disk with the checks it passes and fails; brand strings shown as weak context and as conflicts |
@@ -151,7 +151,7 @@ because overlay OCR reads fewer labels and clocks on low-bitrate H.265 test foot
 | Native plugins for Uniview, TP-Link, Matrix, Godrej | Not possible without samples (universal path covers them) |
 | Validation on real drives and real NVRs | **Not done: highest priority** |
 
-## Documents (PS deliverables)
+## Documents
 
 | Deliverable | File |
 | --- | --- |

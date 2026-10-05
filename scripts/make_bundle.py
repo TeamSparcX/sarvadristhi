@@ -13,7 +13,7 @@ RFDETR = Path.home() / ".roboflow" / "models" / "rf-detr-base.pth"
 DATA = ["kit/meva", "kit/scenario/images", "kit/scenario/usb_files", "kit/scenario/ground_truth",
         "kit/scenario/scenario.json", "kit/images", "kit/exports", "kit/ground_truth", "kit/manifest.json",
         "kit/SHA256SUMS", "kit/real", "kit/realcams", "kit/usb_demo.vhd", "models", "cases/OP-2013"]
-START = """sarvadristhi (SIH26150) - Forensic Workbench
+START = """sarvadristhi - Forensic Workbench
 =====================================
 Everything is in this folder: code, docs, all videos, evidence images, models and a finished demo case.
 

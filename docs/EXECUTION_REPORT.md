@@ -1,4 +1,4 @@
-# Sarvadristhi (SIH26150) — Execution report and limitations
+# Sarvadristhi — Execution report and limitations
 
 As of 5 October 2026 · Windows 11 laptop (RTX 4050 6 GB) · repository `aditya36900/ProjectR`
 
@@ -47,7 +47,7 @@ formats and stated as such in the UI and report.
 | P7 | USB export edited | Yes | **6.0 s removed (16:51:25–16:51:31)**, located frame by frame |
 | P8 | Video disguised as `maintenance_log.txt` | Yes | MP4 header under a `.txt` name; exact copy of CAM-04 16:51:18–16:51:48 |
 
-All 13 SIH26150 requirements on the case's flag board are demonstrated. Custody: chain intact; all
+All 13 requirements on the case's flag board are demonstrated. Custody: chain intact; all
 three evidence hashes identical before and after analysis.
 
 ## 3. AI accuracy, measured
