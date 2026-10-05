@@ -3,6 +3,7 @@
 > **Start here (Windows):** [docs/RUN_A_TO_Z.md](docs/RUN_A_TO_Z.md) — setup, demo data, running the
 > Forensic Workbench and the one-run "Operation demo".
 > `scripts\setup_windows.ps1` once, then `scripts\run_demo.ps1`.
+> **Docker (any OS):** [docs/DOCKER.md](docs/DOCKER.md) — load the image from the GitHub release `v0.1.0`, or `docker build -t sarvadristhi:0.1.0 .`
 > **New contributor?** [docs/CONTRIBUTOR_GUIDE.md](docs/CONTRIBUTOR_GUIDE.md) — accept the invite, download, run, contribute.
 > **What was done and its limits:** [docs/EXECUTION_REPORT.md](docs/EXECUTION_REPORT.md).
 > Demo data (3.9 GB: real CCTV footage, poisoned DVR/USB images, models, a finished case) is attached to
